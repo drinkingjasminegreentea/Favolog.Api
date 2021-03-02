@@ -1,5 +1,4 @@
 ﻿using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Favolog.Service.Settings;
 using Microsoft.Extensions.Options;
 using System;
@@ -21,7 +20,7 @@ namespace Favolog.Service.ServiceClients
         public void UploadItemImageFromUrl(string sourceUrl, string blobName)
         {
             var blobServiceClient = new BlobServiceClient(appSettings.AzureBlobConnectionsString);
-            var containerClient = blobServiceClient.GetBlobContainerClient("productimages");            
+            var containerClient = blobServiceClient.GetBlobContainerClient("itemimages");
             var blockBlobClient = containerClient.GetBlobClient(blobName);
             blockBlobClient.SyncCopyFromUri(new Uri(sourceUrl));            
         }
