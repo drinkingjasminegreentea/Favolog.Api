@@ -181,6 +181,26 @@ namespace Favolog.Service.Controllers
             result.TotalFollowers = _repository.Get<UserFollow>().Where(f => f.UserId == user.Id).Count();
             result.TotalFollowing = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Count();
             return Ok(result);
-        }        
+        }
+
+        [HttpDelete]
+        [Route("{username}")]
+        public ActionResult Delete([FromRoute] string username)
+        {
+            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
+            if (user == null)
+                return BadRequest();
+
+            var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id).AsEnumerable();
+            var catalogIds = catalogs.Select(c => c.Id);
+            var catalogItems = _repository.Get<CatalogItem>().Where(ci => catalogIds.Contains(ci.CatalogId)).AsEnumerable();
+
+            _repository.Delete(catalogItems);
+            _repository.Delete(catalogs);
+            _repository.Delete(user);
+            _repository.SaveChanges();
+
+            return new NoContentResult();
+        }
     }
 }

@@ -25,6 +25,12 @@ namespace Favolog.Service
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //Setup Elmah logging
+            services.AddElmah<SqlErrorLog>(options =>
+            {
+                options.ConnectionString = Configuration.GetConnectionString("ElmahDatabase");
+            });
+
             services.AddDbContext<FavologDbContext>(options =>
             {
                 options.UseSqlServer(Configuration.GetConnectionString("FavologDatabase"));                
@@ -48,13 +54,7 @@ namespace Favolog.Service
 
             services.AddScoped<IFavologRepository, FavologRepository>();
             services.AddScoped<IBlobStorageService, BlobStorageService>();
-            services.AddHttpClient<IOpenGraphGenerator, OpenGraphGenerator>();
-
-            //Setup Elmah logging
-            services.AddElmah<SqlErrorLog>(options =>
-            {
-                options.ConnectionString = Configuration.GetConnectionString("ElmahDatabase");
-            });
+            services.AddHttpClient<IOpenGraphGenerator, OpenGraphGenerator>();            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
