@@ -23,9 +23,10 @@ namespace Favolog.Service.Controllers
             if (user == null)
                 return NotFound();
 
-            var followingUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
+            var feedUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
+            feedUserIds.Add(user.Id.Value);
 
-            var result = _repository.Get<UserFeed>().Where(f => followingUserIds.Contains(f.UserId)).OrderByDescending(f=>f.Id).ToList();
+            var result = _repository.Get<UserFeed>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f=>f.Id).ToList();
 
             return Ok(result);
         }
