@@ -56,12 +56,16 @@ namespace Favolog.Service.Controllers
         }               
 
         [HttpPut]
-        public Catalog Put([FromBody] Catalog catalog)
+        public ActionResult Put([FromBody] Catalog catalog)
         {
-            _repository.Attach(catalog);
+            var existingOne = _repository.Get<Catalog>(catalog.Id.Value).SingleOrDefault();
+            if (existingOne == null)
+                return BadRequest();
+
+            existingOne.Name = catalog.Name;
             _repository.SaveChanges();
 
-            return catalog;
+            return Ok(existingOne);
         }
 
         [HttpDelete]
@@ -76,6 +80,22 @@ namespace Favolog.Service.Controllers
 
             _repository.Delete(catalogItems);
             _repository.Delete(catalog);
+            _repository.SaveChanges();
+
+            return new NoContentResult();
+        }
+
+        [HttpDelete]
+        [Route("{id}/item/{itemId}")]
+        public ActionResult DeleteItem([FromRoute] int id, [FromRoute] int itemId)
+        {
+            var catalog = _repository.Get<Catalog>(id).SingleOrDefault();
+            if (catalog == null)
+                return BadRequest();
+
+            var catalogItem = _repository.Get<CatalogItem>().Where(ci => ci.CatalogId == id && ci.ItemId == itemId).SingleOrDefault();
+
+            _repository.Delete(catalogItem);            
             _repository.SaveChanges();
 
             return new NoContentResult();
