@@ -43,18 +43,27 @@ namespace Favolog.Service.Controllers
             if (catalog == null)
                 return BadRequest("Cannot find the catalog");
 
-            var openGraphInfo = await _openGraphGenerator.GetOpenGraph(itemPost.Url);            
+            var newItem = new Item();
 
-            var newItem = new Item
+            if (!string.IsNullOrEmpty(itemPost.Title))
             {
-                Title = openGraphInfo.Title,
-                ImageName = GetNewImageName(openGraphInfo.Image),
-                Url = openGraphInfo.Url,
-                SourceImageUrl = openGraphInfo.Image,
-                OriginalUrl = itemPost.Url
-            };
-
-            _blobService.UploadItemImageFromUrl(openGraphInfo.Image, newItem.ImageName);
+                newItem.Title = itemPost.Title;
+                if (!string.IsNullOrEmpty(itemPost.ImageName))
+                    newItem.ImageName = GetNewImageName(itemPost.ImageName);
+                newItem.Url = itemPost.Url;
+            }
+            else if (!string.IsNullOrEmpty(itemPost.OriginalUrl))
+            {
+                var openGraphInfo = await _openGraphGenerator.GetOpenGraph(itemPost.OriginalUrl);
+                newItem.SourceImageUrl = openGraphInfo.Image;
+                newItem.Url = openGraphInfo.Url;
+                newItem.OriginalUrl = itemPost.OriginalUrl;
+                newItem.Title = openGraphInfo.Title;
+                newItem.ImageName = GetNewImageName(openGraphInfo.Image);
+                _blobService.UploadItemImageFromUrl(openGraphInfo.Image, newItem.ImageName);
+            }
+            else
+                return BadRequest();
 
             var catalogItem = new CatalogItem
             {

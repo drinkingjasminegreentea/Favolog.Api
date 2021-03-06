@@ -14,7 +14,9 @@ namespace Favolog.Service.Models
 
         public string UrlDomain { get
             {
-                return new Uri(Url).Host;
+                if (!string.IsNullOrEmpty(Url))
+                    return new Uri(Url).Host;
+                return "";
             }
         }
 
