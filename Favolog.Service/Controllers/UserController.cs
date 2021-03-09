@@ -1,4 +1,5 @@
-﻿using Favolog.Service.Models;
+﻿using Favolog.Service.Extensions;
+using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,11 +30,15 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpPost]
-        public User Post([FromBody] User user)
+        public ActionResult Post([FromBody] User user)
         {
             var existingUser = _repository.Get<User>().Where(u => u.ExternalId == user.ExternalId).SingleOrDefault();
+
+            if (!HttpContext.IsAuthorized(existingUser.ExternalId))
+                return Unauthorized();
+
             if (existingUser != null)
-                return existingUser;
+                return Ok(existingUser);
             
             var username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf("@"));            
             existingUser = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
@@ -41,14 +46,14 @@ namespace Favolog.Service.Controllers
             {
                 existingUser.ExternalId = user.ExternalId;
                 _repository.SaveChanges();
-                return existingUser;
+                return Ok(existingUser); 
             }
 
             user.Username = username;
 
             _repository.Attach(user);
             _repository.SaveChanges();
-            return user;
+            return Ok(user); 
         }
 
         [HttpGet]
@@ -58,6 +63,9 @@ namespace Favolog.Service.Controllers
             var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
             if (user == null)
                 return NotFound();
+
+            if (!HttpContext.IsAuthorized(user.ExternalId))
+                return Unauthorized();
 
             var followingUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
 
@@ -132,6 +140,9 @@ namespace Favolog.Service.Controllers
             if (existingUser == null)
                 return BadRequest();
 
+            if (!HttpContext.IsAuthorized(existingUser.ExternalId))
+                return Unauthorized();
+
             existingUser.Username = user.Username;
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
@@ -196,6 +207,9 @@ namespace Favolog.Service.Controllers
             var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
             if (user == null)
                 return BadRequest();
+
+            if (!HttpContext.IsAuthorized(user.ExternalId))
+                return Unauthorized();
 
             var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id).AsEnumerable();
             var catalogIds = catalogs.Select(c => c.Id);

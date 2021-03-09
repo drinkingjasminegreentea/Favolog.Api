@@ -1,4 +1,5 @@
-﻿using Favolog.Service.Models;
+﻿using Favolog.Service.Extensions;
+using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
 using Microsoft.AspNetCore.Authorization;
@@ -40,10 +41,12 @@ namespace Favolog.Service.Controllers
         [HttpPost]        
         public async Task<ActionResult> Post([FromBody] ItemPost itemPost)
         {
-            var catalog = _repository.Get<Catalog>(itemPost.CatalogId).SingleOrDefault();
-
+            var catalog = _repository.Get<Catalog>(itemPost.CatalogId).Include(c => c.User).SingleOrDefault();
             if (catalog == null)
-                return BadRequest("Cannot find the catalog");
+                return BadRequest();
+
+            if (!HttpContext.IsAuthorized(catalog.User.ExternalId))
+                return Unauthorized();
 
             var newItem = new Item();
 
@@ -91,26 +94,7 @@ namespace Favolog.Service.Controllers
 
             return product;
         }
-
-        [HttpDelete]
-        [Route("{id}")]
-        public ActionResult Delete([FromRoute] int id)
-        {
-            var item = _repository.Get<Item>(id)                
-                .SingleOrDefault();
-
-            if (item == null)
-                return BadRequest();
-
-            var catalogItems = _repository.Get<CatalogItem>().Where(ci => ci.ItemId == id).AsEnumerable();
-            _repository.Delete(catalogItems);
-
-            _repository.Delete(item);
-            _repository.SaveChanges();
-
-            return new NoContentResult();
-        }
-
+                
         private string GetNewImageName(string imageUrl)
         {
             var extension = GetFileExtensionFromUrl(imageUrl);
