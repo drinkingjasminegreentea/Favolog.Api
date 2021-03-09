@@ -18,7 +18,7 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("user/{username}")]
+        [Route("user/{username}")]        
         public ActionResult GetUser([FromRoute] string username)
         {
             var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
@@ -33,7 +33,8 @@ namespace Favolog.Service.Controllers
             return Ok(result);
         }
 
-        [HttpGet]        
+        [HttpGet]
+        [AllowAnonymous]
         public ActionResult Get()
         {
             var result = _repository.Get<UserFeed>().OrderByDescending(f => f.ItemId).Take(20).ToList();

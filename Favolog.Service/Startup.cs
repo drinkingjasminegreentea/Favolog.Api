@@ -4,7 +4,6 @@ using Favolog.Service.AuthorizationPolicies;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
 using Favolog.Service.Settings;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -79,7 +78,7 @@ namespace Favolog.Service
 
             app.UseElmah();
             app.UseRouting();
-            app.UseHsts();
+            //app.UseHsts();
             app.UseCors("localhost");
 
             app.UseAuthentication();

@@ -9,7 +9,7 @@ namespace Favolog.Service.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Policy = "access")]
     public class CatalogController : ControllerBase
     {
         private readonly IFavologRepository _repository;

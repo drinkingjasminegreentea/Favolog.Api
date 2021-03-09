@@ -1,5 +1,6 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -8,6 +9,7 @@ namespace Favolog.Service.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "access")]
     public class UserController : ControllerBase
     {
         private readonly IFavologRepository _repository;
@@ -18,6 +20,7 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [Route("{username}")]
+        [AllowAnonymous]
         public User Get([FromRoute] string username)
         {
             return _repository.Get<User>()
@@ -64,7 +67,7 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpPost]
-        [Route("Follow")]
+        [Route("Follow")]        
         public ActionResult Follow([FromBody] UserFollow userFollow)
         {
             var existingFollow = _repository.Get<UserFollow>()
@@ -93,6 +96,7 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [Route("{username}/followers")]
+        [AllowAnonymous]
         public ActionResult Followers([FromRoute] string username)
         {
             var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
@@ -107,6 +111,7 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [Route("{username}/following")]
+        [AllowAnonymous]
         public ActionResult Following([FromRoute] string username)
         {
             var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
@@ -149,6 +154,7 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [Route("{username}/profile")]
+        [AllowAnonymous]
         public ActionResult<UserProfile> GetProfile([FromRoute] string username)
         {
             if (string.IsNullOrEmpty(username))

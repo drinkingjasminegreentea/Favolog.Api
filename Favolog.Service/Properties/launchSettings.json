@@ -1,7 +1,11 @@
 {
   "iisSettings": {
     "windowsAuthentication": false,
-    "anonymousAuthentication": true,    
+    "anonymousAuthentication": true,
+    "iis": {
+      "applicationUrl": "http://localhost/Favolog.Service",
+      "sslPort": 0
+    },
     "iisExpress": {
       "applicationUrl": "http://localhost:56618",
       "sslPort": 44336
@@ -11,6 +15,13 @@
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS": {
+      "commandName": "IIS",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

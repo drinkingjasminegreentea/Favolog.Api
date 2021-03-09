@@ -1,6 +1,7 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -11,6 +12,7 @@ namespace Favolog.Service.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "access")]
     public class ItemController : ControllerBase
     {
         private readonly IFavologRepository _repository;
@@ -92,10 +94,16 @@ namespace Favolog.Service.Controllers
 
         [HttpDelete]
         [Route("{id}")]
-        public NoContentResult Delete([FromRoute] int id)
+        public ActionResult Delete([FromRoute] int id)
         {
             var item = _repository.Get<Item>(id)                
                 .SingleOrDefault();
+
+            if (item == null)
+                return BadRequest();
+
+            var catalogItems = _repository.Get<CatalogItem>().Where(ci => ci.ItemId == id).AsEnumerable();
+            _repository.Delete(catalogItems);
 
             _repository.Delete(item);
             _repository.SaveChanges();
