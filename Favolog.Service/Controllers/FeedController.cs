@@ -1,11 +1,13 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 
 namespace Favolog.Service.Controllers
 {
     [ApiController]
+    [Authorize(Policy = "access")]
     [Route("api/[controller]")]
     public class FeedController : ControllerBase
     {

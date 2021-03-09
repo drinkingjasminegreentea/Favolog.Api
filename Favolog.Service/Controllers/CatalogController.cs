@@ -1,5 +1,6 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -8,6 +9,7 @@ namespace Favolog.Service.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class CatalogController : ControllerBase
     {
         private readonly IFavologRepository _repository;

@@ -1,15 +1,19 @@
 using ElmahCore.Mvc;
 using ElmahCore.Sql;
+using Favolog.Service.AuthorizationPolicies;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
 using Favolog.Service.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Identity.Web;
 using Newtonsoft.Json;
+
 
 namespace Favolog.Service
 {
@@ -45,9 +49,17 @@ namespace Favolog.Service
                  .AllowAnyHeader());
             });
 
+            services.AddMicrosoftIdentityWebApiAuthentication(Configuration, "AzureAdB2C");
+
             services.AddControllers(options =>
                 options.EnableEndpointRouting = false)
                 .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("access",
+                        policy => policy.Requirements.Add(new ScopesRequirement("access")));
+            });
 
             services.Configure<AppSettings>(Configuration.GetSection(
                                         AppSettings.Section));
@@ -67,9 +79,10 @@ namespace Favolog.Service
 
             app.UseElmah();
             app.UseRouting();
-
+            app.UseHsts();
             app.UseCors("localhost");
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
