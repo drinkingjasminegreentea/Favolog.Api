@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Favolog.Service.Models
+﻿namespace Favolog.Service.Models
 {
     public class UserFeed: Entity
     {
@@ -8,9 +6,9 @@ namespace Favolog.Service.Models
 
         public int UserId { get; set; }
 
-        public int ItemId { get; set; }
+        public string FirstName { get; set; }
 
-        public string Username { get; set; }
+        public string LastName { get; set; }
 
         public string ProfileImage { get; set; }
 

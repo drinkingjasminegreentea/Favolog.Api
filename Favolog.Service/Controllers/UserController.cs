@@ -20,47 +20,37 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{username}")]
+        [Route("{id}")]
         [AllowAnonymous]
-        public User Get([FromRoute] string username)
+        public User Get([FromRoute] int id)
         {
-            return _repository.Get<User>()
-                .Where(u => u.Username == username)
+            return _repository.Get<User>(id)                
                 .SingleOrDefault();
         }
 
         [HttpPost]
         public ActionResult Post([FromBody] User user)
         {
-            var existingUser = _repository.Get<User>().Where(u => u.ExternalId == user.ExternalId).SingleOrDefault();
-
-            if (!HttpContext.IsAuthorized(existingUser.ExternalId))
+            if (!HttpContext.IsAuthorized(user.ExternalId))
                 return Unauthorized();
 
+            var existingUser = _repository.Get<User>().Where(u => u.ExternalId == user.ExternalId).SingleOrDefault();
+
             if (existingUser != null)
+            {                
                 return Ok(existingUser);
+            }              
             
-            var username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf("@"));            
-            existingUser = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
-            if (existingUser != null)
-            {
-                existingUser.ExternalId = user.ExternalId;
-                _repository.SaveChanges();
-                return Ok(existingUser); 
-            }
-
-            user.Username = username;
-
             _repository.Attach(user);
             _repository.SaveChanges();
             return Ok(user); 
         }
 
         [HttpGet]
-        [Route("{username}/feed")]
-        public ActionResult GetFeed([FromRoute] string username)
+        [Route("{id}/feed")]
+        public ActionResult GetFeed([FromRoute] int id)
         {
-            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
+            var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
                 return NotFound();
 
@@ -103,11 +93,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{username}/followers")]
+        [Route("{id}/followers")]
         [AllowAnonymous]
-        public ActionResult Followers([FromRoute] string username)
+        public ActionResult Followers([FromRoute] int id)
         {
-            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
+            var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
                 return NotFound();
 
@@ -118,11 +108,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{username}/following")]
+        [Route("{id}/following")]
         [AllowAnonymous]
-        public ActionResult Following([FromRoute] string username)
+        public ActionResult Following([FromRoute] int id)
         {
-            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
+            var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
                 return NotFound();
 
@@ -142,8 +132,7 @@ namespace Favolog.Service.Controllers
 
             if (!HttpContext.IsAuthorized(existingUser.ExternalId))
                 return Unauthorized();
-
-            existingUser.Username = user.Username;
+                        
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
             existingUser.EmailAddress = user.EmailAddress;
@@ -164,14 +153,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{username}/profile")]
+        [Route("{id}/profile")]
         [AllowAnonymous]
-        public ActionResult<UserProfile> GetProfile([FromRoute] string username)
+        public ActionResult<UserProfile> GetProfile([FromRoute] int id)
         {
-            if (string.IsNullOrEmpty(username))
-                return BadRequest();
-
-            var user = _repository.Get<User>().Where(user => user.Username == username).SingleOrDefault();
+            var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
                 return BadRequest("Unable to find the user");
 
@@ -201,22 +187,20 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpDelete]
-        [Route("{username}")]
-        public ActionResult Delete([FromRoute] string username)
+        [Route("{id}")]
+        public ActionResult Delete([FromRoute] int id)
         {
-            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
+            var user = _repository.Get<User>(id).Include(u=>u.Catalogs).ThenInclude(c=>c.Items).SingleOrDefault();
             if (user == null)
                 return BadRequest();
 
             if (!HttpContext.IsAuthorized(user.ExternalId))
                 return Unauthorized();
 
-            var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id).AsEnumerable();
-            var catalogIds = catalogs.Select(c => c.Id);
-            var catalogItems = _repository.Get<CatalogItem>().Where(ci => catalogIds.Contains(ci.CatalogId)).AsEnumerable();
+            var items = user.Catalogs.SelectMany(c => c.Items);
 
-            _repository.Delete(catalogItems);
-            _repository.Delete(catalogs);
+            _repository.Delete(items);
+            _repository.Delete(user.Catalogs);
             _repository.Delete(user);
             _repository.SaveChanges();
 

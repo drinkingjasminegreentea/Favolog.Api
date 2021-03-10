@@ -19,9 +19,8 @@ namespace Favolog.Service.Controllers
         public ActionResult<SearchResults> Get([FromQuery] string query)
         {
             var searchResults = new SearchResults { 
-                Catalogs = _repository.Get<Catalog>().Where(item => item.Name.Contains(query)).ToList(),
-                Items = _repository.Get<Item>().Where(item => item.Title.Contains(query)).ToList(),
-                Users = _repository.Get<User>().Where(item => item.Username.Contains(query)).ToList()
+                Catalogs = _repository.Get<Catalog>().Where(item => item.Name.Contains(query)).ToList(),                
+                Users = _repository.Get<User>().Where(item => item.FirstName.Contains(query) || item.LastName.Contains(query)).ToList()
             };
 
             return searchResults;

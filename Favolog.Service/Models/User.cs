@@ -1,18 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Favolog.Service.Models
 {
     public class User: Entity
     {
-        public string Username { get; set; }        
-               
+        [Required]
         public string FirstName { get; set; }
 
         public string LastName { get; set; }
 
         [Required]
-        public string EmailAddress { get; set; }        
+        public string EmailAddress { get; set; }
 
+        [Required]
         public string ExternalId { get; set; }
 
         public string ProfileImage { get; set; }
@@ -20,5 +21,7 @@ namespace Favolog.Service.Models
         public string Bio { get; set; }
 
         public string Website { get; set; }        
+
+        public List<Catalog> Catalogs { get; set; }
     }
 }

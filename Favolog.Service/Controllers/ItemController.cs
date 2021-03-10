@@ -33,57 +33,37 @@ namespace Favolog.Service.Controllers
         public Item Get([FromRoute] int id)
         {
             return _repository.Get<Item>(id)
-                .Include(i => i.Catalogs)
-                .Include(i => i.CatalogItems)
+                .Include(i => i.Catalog)
                 .SingleOrDefault();
         }             
 
         [HttpPost]        
-        public async Task<ActionResult> Post([FromBody] ItemPost itemPost)
+        public async Task<ActionResult> Post([FromBody] Item item)
         {
-            var catalog = _repository.Get<Catalog>(itemPost.CatalogId).Include(c => c.User).SingleOrDefault();
+            var catalog = _repository.Get<Catalog>(item.CatalogId).Include(c => c.User).SingleOrDefault();
             if (catalog == null)
                 return BadRequest();
 
             if (!HttpContext.IsAuthorized(catalog.User.ExternalId))
                 return Unauthorized();
-
-            var newItem = new Item();
-
-            if (!string.IsNullOrEmpty(itemPost.Title))
+                        
+            if (!string.IsNullOrEmpty(item.OriginalUrl))
             {
-                newItem.Title = itemPost.Title;
-                if (!string.IsNullOrEmpty(itemPost.ImageName))
-                    newItem.ImageName = GetNewImageName(itemPost.ImageName);
-                newItem.Url = itemPost.Url;
-            }
-            else if (!string.IsNullOrEmpty(itemPost.OriginalUrl))
-            {
-                var openGraphInfo = await _openGraphGenerator.GetOpenGraph(itemPost.OriginalUrl);
-                newItem.SourceImageUrl = openGraphInfo.Image;
-                newItem.Url = openGraphInfo.Url;
-                newItem.OriginalUrl = itemPost.OriginalUrl;
-                newItem.Title = openGraphInfo.Title;
-                newItem.ImageName = GetNewImageName(openGraphInfo.Image);
-                _blobService.UploadItemImageFromUrl(openGraphInfo.Image, newItem.ImageName);
+                var openGraphInfo = await _openGraphGenerator.GetOpenGraph(item.OriginalUrl);
+                item.SourceImageUrl = openGraphInfo.Image;
+                item.Url = openGraphInfo.Url;
+                item.OriginalUrl = item.OriginalUrl;
+                item.Title = openGraphInfo.Title;
+                item.ImageName = GetNewImageName(openGraphInfo.Image);
+                _blobService.UploadItemImageFromUrl(openGraphInfo.Image, item.ImageName);
             }
             else
                 return BadRequest();
 
-            var catalogItem = new CatalogItem
-            {
-                Catalog = catalog,
-                Item = newItem,
-                Comments = itemPost.Comments
-            };
-
-            _repository.Attach(newItem);
-            _repository.Attach(catalogItem);
-
+            _repository.Attach(item);
             _repository.SaveChanges();
 
-            return Ok();
-
+            return Ok(item);
         }
 
         [HttpPut]
@@ -94,7 +74,7 @@ namespace Favolog.Service.Controllers
 
             return product;
         }
-                
+        
         private string GetNewImageName(string imageUrl)
         {
             var extension = GetFileExtensionFromUrl(imageUrl);

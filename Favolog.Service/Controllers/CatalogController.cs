@@ -21,10 +21,11 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [Route("{id}")]
+        [AllowAnonymous]
         public ActionResult<Catalog> Get([FromRoute] int id)
         {
             var catalog = _repository.Get<Catalog>(id)
-                .Include(p => p.Items)     
+                .Include(p => p.Items.OrderByDescending(i => i.Id))                
                 .Include(p => p.User)
                 .SingleOrDefault();
 
@@ -84,16 +85,14 @@ namespace Favolog.Service.Controllers
         [Route("{id}")]
         public ActionResult Delete([FromRoute] int id)
         {
-            var catalog = _repository.Get<Catalog>(id).Include(c => c.User).SingleOrDefault();
+            var catalog = _repository.Get<Catalog>(id).Include(c => c.User).Include(c => c.Items).SingleOrDefault();
             if (catalog == null)
                 return BadRequest();
 
             if (!HttpContext.IsAuthorized(catalog.User.ExternalId))
                 return Unauthorized();
 
-            var catalogItems = _repository.Get<CatalogItem>().Where(ci => ci.CatalogId == id).AsEnumerable();
-
-            _repository.Delete(catalogItems);
+            _repository.Delete(catalog.Items);
             _repository.Delete(catalog);
             _repository.SaveChanges();
 
@@ -111,12 +110,12 @@ namespace Favolog.Service.Controllers
             if (!HttpContext.IsAuthorized(catalog.User.ExternalId))
                 return Unauthorized();
 
-            var catalogItem = _repository.Get<CatalogItem>().Where(ci => ci.CatalogId == id && ci.ItemId == itemId).SingleOrDefault();
+            var item = _repository.Get<Item>().Where(ci => ci.CatalogId == id && ci.Id == itemId).SingleOrDefault();
 
-            _repository.Delete(catalogItem);            
+            _repository.Delete(item);            
             _repository.SaveChanges();
 
-            return new NoContentResult();
+            return Ok(item);
         }
     }
 }

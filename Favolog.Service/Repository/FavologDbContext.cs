@@ -14,14 +14,7 @@ namespace Favolog.Service.Repository
             modelBuilder.Entity<Catalog>().ToTable("Catalog", "dbo");            
             modelBuilder.Entity<User>().ToTable("User","dbo");
             modelBuilder.Entity<UserFollow>().ToTable("UserFollow", "dbo");
-            modelBuilder.Entity<UserFeed>().ToTable("vw_UserFeed", "dbo");
-
-            modelBuilder.Entity<Catalog>()
-                .HasMany(c => c.Items)
-                .WithMany(p => p.Catalogs)
-                .UsingEntity<Dictionary<string, object>>("CatalogItem",
-                cp => cp.HasOne<Item>().WithMany().HasForeignKey("ItemId"),
-                cp => cp.HasOne<Catalog>().WithMany().HasForeignKey("CatalogId"));            
+            modelBuilder.Entity<UserFeed>().ToTable("vw_UserFeed", "dbo");    
         }
     }
 }

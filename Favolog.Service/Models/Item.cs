@@ -1,16 +1,26 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 
 namespace Favolog.Service.Models
 {
-    public class Item: Entity
+    public class Item : Entity
     {
+        public Catalog Catalog {get; set;}
+
+        public int CatalogId { get; set; }
+
+        public string Url { get; set; }
+
+        public string OriginalUrl { get; set; }
+
         public string Title { get; set; }
 
         public string ImageName { get; set; }
 
-        public string Url { get; set; }
+        [JsonIgnore]        
+        public string SourceImageUrl { get; set; }
+
+        public string Comments { get; set; }
 
         public string UrlDomain { get
             {
@@ -18,17 +28,7 @@ namespace Favolog.Service.Models
                     return new Uri(Url).Host;
                 return "";
             }
-        }
-
-        [JsonIgnore]
-        public string SourceImageUrl { get; set; }
-
-        [JsonIgnore]
-        public string OriginalUrl { get; set; }
-
-        public List<Catalog> Catalogs { get; set; }
-
-        public List<CatalogItem> CatalogItems { get; set; }
-
+        }        
+        
     }
 }
