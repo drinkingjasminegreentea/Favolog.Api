@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace Favolog.Service.Models
 {
@@ -14,7 +13,6 @@ namespace Favolog.Service.Models
 
         public string OriginalUrl { get; set; }
 
-        [Required]
         public string Title { get; set; }
 
         public string ImageName { get; set; }

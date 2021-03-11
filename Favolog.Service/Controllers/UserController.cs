@@ -102,9 +102,9 @@ namespace Favolog.Service.Controllers
                 return NotFound();
 
             var followerIds = _repository.Get<UserFollow>().Where(f => f.UserId == user.Id).Select(f => f.FollowerId).ToList();
-            var users = _repository.Get<User>().Where(u => followerIds.Contains(u.Id.Value)).ToList();
+            user.Followers = _repository.Get<User>().Where(u => followerIds.Contains(u.Id.Value)).ToList();
 
-            return Ok(users);
+            return Ok(user);
         }
 
         [HttpGet]
@@ -117,9 +117,9 @@ namespace Favolog.Service.Controllers
                 return NotFound();
 
             var followingIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
-            var users = _repository.Get<User>().Where(u => followingIds.Contains(u.Id.Value)).ToList();
+            user.Following = _repository.Get<User>().Where(u => followingIds.Contains(u.Id.Value)).ToList();
 
-            return Ok(users);
+            return Ok(user);
         }
 
 

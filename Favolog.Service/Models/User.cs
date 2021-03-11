@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Favolog.Service.Models
 {
@@ -23,5 +24,9 @@ namespace Favolog.Service.Models
         public string Website { get; set; }        
 
         public List<Catalog> Catalogs { get; set; }
+
+        public List<User> Followers { get; set; }
+
+        public List<User> Following { get; set; }
     }
 }
