@@ -1,6 +1,7 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace Favolog.Service.Controllers
@@ -19,7 +20,7 @@ namespace Favolog.Service.Controllers
         public ActionResult<SearchResults> Get([FromQuery] string query)
         {
             var searchResults = new SearchResults { 
-                Catalogs = _repository.Get<Catalog>().Where(item => item.Name.Contains(query)).ToList(),                
+                Catalogs = _repository.Get<Catalog>().Include(c => c.User).Where(item => item.Name.Contains(query)).ToList(),                
                 Users = _repository.Get<User>().Where(item => item.FirstName.Contains(query) || item.LastName.Contains(query)).ToList()
             };
 
