@@ -57,9 +57,7 @@ namespace Favolog.Service.Controllers
                 item.ImageName = GetNewImageName(openGraphInfo.Image);
                 _blobService.UploadItemImageFromUrl(openGraphInfo.Image, item.ImageName);
             }
-            else
-                return BadRequest();
-
+            
             _repository.Attach(item);
             _repository.SaveChanges();
 
@@ -67,12 +65,28 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpPut]
-        public Item Put([FromBody] Item product)
+        public ActionResult Put([FromBody] Item item)
         {
-            _repository.Attach(product);
+            var existingItem = _repository.Get<Item>(item.Id).Include(i => i.Catalog).ThenInclude(c=>c.User).SingleOrDefault();
+            if (existingItem == null)
+                return BadRequest();
+
+            if (!HttpContext.IsAuthorized(existingItem.Catalog.User.ExternalId))
+                return Unauthorized();
+
+            existingItem.Title = item.Title;
+            if (!string.IsNullOrEmpty(item.Url))
+                existingItem.Url = item.Url;
+
+            if (!string.IsNullOrEmpty(item.Comment))
+                existingItem.Comment = item.Comment;
+
+            if (!string.IsNullOrEmpty(item.ImageName))
+                existingItem.ImageName = item.ImageName;
+
             _repository.SaveChanges();
 
-            return product;
+            return Ok(existingItem);
         }
         
         private string GetNewImageName(string imageUrl)

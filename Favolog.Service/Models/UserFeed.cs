@@ -20,7 +20,7 @@
 
         public string Url { get; set; }
 
-        public string Comments { get; set; }
+        public string Comment { get; set; }
 
         public int AudienceType { get; set; }
 

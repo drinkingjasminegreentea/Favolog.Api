@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Favolog.Service.Models
 {
@@ -13,6 +14,7 @@ namespace Favolog.Service.Models
 
         public string OriginalUrl { get; set; }
 
+        [Required]
         public string Title { get; set; }
 
         public string ImageName { get; set; }
@@ -20,11 +22,11 @@ namespace Favolog.Service.Models
         [JsonIgnore]        
         public string SourceImageUrl { get; set; }
 
-        public string Comments { get; set; }
+        public string Comment { get; set; }
 
         public string UrlDomain { get
             {
-                if (!string.IsNullOrEmpty(Url))
+                if (!string.IsNullOrEmpty(Url) && Uri.IsWellFormedUriString(Url, UriKind.Absolute))
                     return new Uri(Url).Host;
                 return "";
             }
