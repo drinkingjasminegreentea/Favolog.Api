@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Favolog.Service.Models
 {
@@ -11,7 +10,6 @@ namespace Favolog.Service.Models
 
         public string LastName { get; set; }
 
-        [Required]
         public string EmailAddress { get; set; }
 
         [Required]

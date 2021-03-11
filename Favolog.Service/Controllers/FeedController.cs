@@ -29,7 +29,7 @@ namespace Favolog.Service.Controllers
             feedUserIds.Add(user.Id.Value);
 
             var result = _repository.Get<UserFeed>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f=>f.Id).ToList();
-
+                        
             return Ok(result);
         }
 
