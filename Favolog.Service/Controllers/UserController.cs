@@ -149,7 +149,7 @@ namespace Favolog.Service.Controllers
 
             _repository.SaveChanges();            
 
-            return user;
+            return Ok(existingUser);
         }
 
         [HttpGet]
