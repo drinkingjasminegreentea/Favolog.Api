@@ -340,4 +340,4 @@ ASALocalRun/
 healthchecksdb
 
 
-appsettings.Development.json
+/Favolog.Service/apsettings.Development.json
