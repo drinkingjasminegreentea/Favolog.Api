@@ -39,7 +39,14 @@ namespace Favolog.Service.Controllers
             if (existingUser != null)
             {                
                 return Ok(existingUser);
-            }              
+            }
+
+            if (string.IsNullOrEmpty(user.Username)) {
+                if (string.IsNullOrEmpty(user.FirstName))
+                    return BadRequest("Both username and first name cannot be empty");
+
+                user.Username = $"{user.FirstName}{user.LastName}";
+            }
             
             _repository.Attach(user);
             _repository.SaveChanges();
