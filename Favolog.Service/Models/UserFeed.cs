@@ -1,4 +1,6 @@
-﻿namespace Favolog.Service.Models
+﻿using System;
+
+namespace Favolog.Service.Models
 {
     public class UserFeed: Entity
     {
@@ -17,6 +19,16 @@
         public string ImageName { get; set; }
 
         public string Url { get; set; }
+
+        public string UrlDomain
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Url) && Uri.IsWellFormedUriString(Url, UriKind.Absolute))
+                    return new Uri(Url).Host;
+                return "";
+            }
+        }
 
         public string Comment { get; set; }
 
