@@ -339,5 +339,4 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 
-
-/Favolog.Service/apsettings.Development.json
+/Favolog.Service/appsettings.Development.json

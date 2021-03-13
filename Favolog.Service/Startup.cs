@@ -39,13 +39,17 @@ namespace Favolog.Service
                 options.UseSqlServer(Configuration.GetConnectionString("FavologDatabase"));                
             });
 
-            // Add CORS policy
-            services.AddCors(options => {
-                options.AddPolicy("localhost", builder => builder
-                 .WithOrigins("http://localhost:3000/")
-                 .SetIsOriginAllowed((host) => true)
-                 .AllowAnyMethod()
-                 .AllowAnyHeader());
+            services.AddCors(options =>
+            {
+                options.AddPolicy(name: "DefaultPolicy",
+                    builder =>
+                    {
+                        builder.WithOrigins("http://localhost:3000",
+                                            "https://favologservice.azurewebsites.net")
+                        .SetIsOriginAllowed((host) => true)
+                         .AllowAnyMethod()
+                         .AllowAnyHeader();
+                    });
             });
 
             services.AddMicrosoftIdentityWebApiAuthentication(Configuration, "AzureAdB2C");
@@ -78,8 +82,7 @@ namespace Favolog.Service
 
             app.UseElmah();
             app.UseRouting();
-            //app.UseHsts();
-            app.UseCors("localhost");
+            app.UseCors("DefaultPolicy");
 
             app.UseAuthentication();
             app.UseAuthorization();

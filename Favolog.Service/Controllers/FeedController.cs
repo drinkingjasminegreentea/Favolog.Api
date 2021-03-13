@@ -1,6 +1,7 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 
