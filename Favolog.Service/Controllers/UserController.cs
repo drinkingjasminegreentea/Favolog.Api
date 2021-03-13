@@ -139,7 +139,8 @@ namespace Favolog.Service.Controllers
 
             if (!HttpContext.IsAuthorized(existingUser.ExternalId))
                 return Unauthorized();
-                        
+
+            existingUser.Username = user.Username;
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
             existingUser.EmailAddress = user.EmailAddress;
