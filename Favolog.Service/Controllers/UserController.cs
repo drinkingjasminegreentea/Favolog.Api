@@ -100,11 +100,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{id}/followers")]
+        [Route("{username}/followers")]
         [AllowAnonymous]
-        public ActionResult Followers([FromRoute] int id)
+        public ActionResult Followers([FromRoute] string username)
         {
-            var user = _repository.Get<User>(id).SingleOrDefault();
+            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
             if (user == null)
                 return NotFound();
 
@@ -115,11 +115,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{id}/following")]
+        [Route("{username}/following")]
         [AllowAnonymous]
-        public ActionResult Following([FromRoute] int id)
+        public ActionResult Following([FromRoute] string username)
         {
-            var user = _repository.Get<User>(id).SingleOrDefault();
+            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
             if (user == null)
                 return NotFound();
 
@@ -161,11 +161,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{id}/profile")]
+        [Route("{username}/profile")]
         [AllowAnonymous]
-        public ActionResult<UserProfile> GetProfile([FromRoute] int id)
+        public ActionResult<UserProfile> GetProfile([FromRoute] string username)
         {
-            var user = _repository.Get<User>(id).SingleOrDefault();
+            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
             if (user == null)
                 return BadRequest("Unable to find the user");
 
