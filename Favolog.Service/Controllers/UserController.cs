@@ -4,6 +4,7 @@ using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 
 namespace Favolog.Service.Controllers
@@ -47,7 +48,9 @@ namespace Favolog.Service.Controllers
 
                 user.Username = $"{user.FirstName}{user.LastName}";
             }
-            
+
+            user.Username = user.Username.Replace(" ", string.Empty).Replace("'", string.Empty).Replace("-", string.Empty);
+
             _repository.Attach(user);
             _repository.SaveChanges();
             return Ok(user); 
