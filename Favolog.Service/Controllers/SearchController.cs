@@ -21,7 +21,8 @@ namespace Favolog.Service.Controllers
         {
             var searchResults = new SearchResults { 
                 Catalogs = _repository.Get<Catalog>().Include(c => c.User).Where(item => item.Name.Contains(query)).ToList(),                
-                Users = _repository.Get<User>().Where(item => item.FirstName.Contains(query) || item.LastName.Contains(query)).ToList()
+                Users = _repository.Get<User>().Where(item => item.FirstName.Contains(query) || item.LastName.Contains(query) || item.Username.Contains
+                (query)).ToList()
             };
 
             return searchResults;
