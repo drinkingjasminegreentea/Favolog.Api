@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Favolog.Service.Controllers
 {
@@ -49,8 +50,17 @@ namespace Favolog.Service.Controllers
                 user.Username = $"{user.FirstName}{user.LastName}";
             }
 
+            var usernameRegex = new Regex(@"^[a-zA-Z0-9_]*$");
+
             user.Username = user.Username.Replace(" ", string.Empty).Replace("'", string.Empty).Replace("-", string.Empty);
 
+            if (!usernameRegex.IsMatch(user.Username))
+            {
+                if (!string.IsNullOrEmpty(user.EmailAddress))
+                    user.Username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf('@'));
+                else
+                    throw new Exception($"User with no email address and no suitable username was generated {user.ExternalId}");
+            }
             _repository.Attach(user);
             _repository.SaveChanges();
             return Ok(user); 
