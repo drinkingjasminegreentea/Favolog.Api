@@ -1,7 +1,6 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 
@@ -29,18 +28,31 @@ namespace Favolog.Service.Controllers
             var feedUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
             feedUserIds.Add(user.Id.Value);
 
-            var result = _repository.Get<UserFeed>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f=>f.Id).ToList();
-                        
-            return Ok(result);
+            var userFeed = new UserFeed
+            {
+                Items = _repository.Get<UserFeedItem>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f => f.Id).ToList()
+            };
+
+            if (userFeed.Items.Count == 0)
+            {
+                userFeed.NewUser = true;
+                userFeed.Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(20).ToList();
+            }                            
+
+            return Ok(userFeed);
         }
 
         [HttpGet]
         [AllowAnonymous]
         public ActionResult Get()
         {
-            var result = _repository.Get<UserFeed>().OrderByDescending(f => f.Id).Take(20).ToList();
-
-            return Ok(result);
+            var userFeed = new UserFeed
+            {
+                Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(20).ToList(),
+                GuestUser = true
+            };
+            
+            return Ok(userFeed);
         }
     }
 }

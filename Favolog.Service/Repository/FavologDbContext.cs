@@ -1,6 +1,5 @@
 ﻿using Favolog.Service.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 
 namespace Favolog.Service.Repository
 {
@@ -14,7 +13,7 @@ namespace Favolog.Service.Repository
             modelBuilder.Entity<Catalog>().ToTable("Catalog", "dbo");            
             modelBuilder.Entity<User>().ToTable("User","dbo");
             modelBuilder.Entity<UserFollow>().ToTable("UserFollow", "dbo");
-            modelBuilder.Entity<UserFeed>().ToTable("vw_UserFeed", "dbo");            
+            modelBuilder.Entity<UserFeedItem>().ToTable("vw_UserFeed", "dbo");            
         }
     }
 }

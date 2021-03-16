@@ -79,7 +79,7 @@ namespace Favolog.Service.Controllers
 
             var followingUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
 
-            var result = _repository.Get<UserFeed>().Where(f => followingUserIds.Contains(f.UserId)).OrderByDescending(f=>f.Id).ToList();
+            var result = _repository.Get<UserFeedItem>().Where(f => followingUserIds.Contains(f.UserId)).OrderByDescending(f=>f.Id).ToList();
 
             return Ok(result);
         }
