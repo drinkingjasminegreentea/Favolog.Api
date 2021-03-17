@@ -90,8 +90,7 @@ namespace Favolog.Service.Controllers
             if (!string.IsNullOrEmpty(item.Url))
                 existingItem.Url = item.Url;
 
-            if (!string.IsNullOrEmpty(item.Comment))
-                existingItem.Comment = item.Comment;
+            existingItem.Comment = item.Comment;
 
             if (!string.IsNullOrEmpty(item.ImageName))
                 existingItem.ImageName = item.ImageName;
