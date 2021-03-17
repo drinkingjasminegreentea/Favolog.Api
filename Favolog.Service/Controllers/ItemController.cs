@@ -56,7 +56,10 @@ namespace Favolog.Service.Controllers
                                   
             if (!string.IsNullOrEmpty(item.OriginalUrl))
             {
-                var openGraphInfo = await _openGraphGenerator.GetOpenGraph(item.OriginalUrl);
+                //when links are copied from Amazon, it addes item title before the URL, so need to strip that off
+                var startIndex = item.OriginalUrl.IndexOf("https://");
+                var correctedUrl = item.OriginalUrl.Substring(startIndex, item.OriginalUrl.Length - startIndex);
+                var openGraphInfo = await _openGraphGenerator.GetOpenGraph(correctedUrl);
                 item.SourceImageUrl = openGraphInfo.Image;
                 item.Url = openGraphInfo.Url;
                 item.OriginalUrl = item.OriginalUrl;
