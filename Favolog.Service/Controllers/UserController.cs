@@ -227,5 +227,22 @@ namespace Favolog.Service.Controllers
 
             return new NoContentResult();
         }
+
+        [HttpGet]
+        [Route("catalog")]        
+        public ActionResult<Catalog> GetCatalogs()
+        {
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            var user = _repository.Get<User>().Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();
+            if (user == null)
+                return Unauthorized();
+
+            var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id.Value).ToList();                            
+            
+            return Ok(catalogs);
+        }
     }
 }

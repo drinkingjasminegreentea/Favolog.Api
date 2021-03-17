@@ -1,6 +1,7 @@
 ﻿using Favolog.Service.Models.Enums;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Favolog.Service.Models
 {
@@ -14,6 +15,9 @@ namespace Favolog.Service.Models
 
         [Required]
         public int UserId { get; set; }
+
+        [NotMapped]
+        public bool IsEditable { get; set; }
 
         public User User { get; set; }
 

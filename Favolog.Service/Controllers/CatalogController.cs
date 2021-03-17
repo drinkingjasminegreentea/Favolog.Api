@@ -20,9 +20,9 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{id}")]
+        [Route("{id}/public")]
         [AllowAnonymous]
-        public ActionResult<Catalog> Get([FromRoute] int id)
+        public ActionResult<Catalog> GetPublic([FromRoute] int id)
         {
             var catalog = _repository.Get<Catalog>(id)
                 .Include(p => p.Items.OrderByDescending(i => i.Id))                
@@ -35,14 +35,36 @@ namespace Favolog.Service.Controllers
             var user = _repository.Get<User>(catalog.UserId).SingleOrDefault();            
 
             return Ok(catalog);
-        }               
+        }
+
+        [HttpGet]
+        [Route("{id}")]        
+        public ActionResult<Catalog> Get([FromRoute] int id)
+        {
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            var catalog = _repository.Get<Catalog>(id)
+                .Include(p => p.Items.OrderByDescending(i => i.Id))
+                .Include(p => p.User)
+                .SingleOrDefault();
+
+            if (catalog == null)
+                return BadRequest();
+
+            catalog.IsEditable = loggedInUserId == catalog.User.ExternalId;
+
+            return Ok(catalog);
+        }
+
 
         [HttpPost]        
         public ActionResult<Catalog> Post([FromBody] Catalog catalog)
         {
             var loggedInUserId = HttpContext.GetLoggedInUserId();
             if (loggedInUserId == null)
-                return BadRequest();
+                return Unauthorized();
 
             var user = _repository.Get<User>()                
                 .Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();

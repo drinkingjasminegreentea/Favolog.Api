@@ -40,13 +40,20 @@ namespace Favolog.Service.Controllers
         [HttpPost]        
         public async Task<ActionResult> Post([FromBody] Item item)
         {
-            var catalog = _repository.Get<Catalog>(item.CatalogId).Include(c => c.User).SingleOrDefault();
-            if (catalog == null)
-                return BadRequest();
-
-            if (!HttpContext.IsAuthorized(catalog.User.ExternalId))
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
                 return Unauthorized();
-                        
+
+            var user = _repository.Get<User>()
+                .Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();
+
+            if (user == null)
+                return BadRequest("User not found");
+
+            var catalog = _repository.Get<Catalog>().Where(c => c.Id == item.CatalogId && c.UserId == user.Id.Value).SingleOrDefault();
+            if (catalog == null)
+                return BadRequest("Catalog not found");
+                                  
             if (!string.IsNullOrEmpty(item.OriginalUrl))
             {
                 var openGraphInfo = await _openGraphGenerator.GetOpenGraph(item.OriginalUrl);
@@ -57,6 +64,8 @@ namespace Favolog.Service.Controllers
                 item.ImageName = GetNewImageName(openGraphInfo.Image);
                 _blobService.UploadItemImageFromUrl(openGraphInfo.Image, item.ImageName);
             }
+
+            item.CatalogId = catalog.Id.Value;
             
             _repository.Attach(item);
             _repository.SaveChanges();
