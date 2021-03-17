@@ -38,7 +38,7 @@ namespace Favolog.Service.Controllers
         }             
 
         [HttpPost]        
-        public async Task<ActionResult> Post([FromBody] Item item)
+        public async Task<ActionResult> Post([FromBody] ItemPost itemPost)
         {
             var loggedInUserId = HttpContext.GetLoggedInUserId();
             if (loggedInUserId == null)
@@ -50,26 +50,47 @@ namespace Favolog.Service.Controllers
             if (user == null)
                 return BadRequest("User not found");
 
-            var catalog = _repository.Get<Catalog>().Where(c => c.Id == item.CatalogId && c.UserId == user.Id.Value).SingleOrDefault();
-            if (catalog == null)
-                return BadRequest("Catalog not found");
+            Catalog existingCatalog = null;
+            if (itemPost.CatalogId != null)
+            {
+                existingCatalog = _repository.Get<Catalog>().Where(c => c.Id == itemPost.CatalogId && c.UserId == user.Id.Value).SingleOrDefault();
+                if (existingCatalog == null)
+                    return BadRequest("Catalog not found");
+            }
+
+            var item = new Item();
                                   
-            if (!string.IsNullOrEmpty(item.OriginalUrl))
+            if (!string.IsNullOrEmpty(itemPost.OriginalUrl))
             {
                 //when links are copied from Amazon, it addes item title before the URL, so need to strip that off
-                var startIndex = item.OriginalUrl.IndexOf("https://");
-                var correctedUrl = item.OriginalUrl.Substring(startIndex, item.OriginalUrl.Length - startIndex);
+                var startIndex = itemPost.OriginalUrl.IndexOf("https://");
+                var correctedUrl = itemPost.OriginalUrl.Substring(startIndex, itemPost.OriginalUrl.Length - startIndex);
                 var openGraphInfo = await _openGraphGenerator.GetOpenGraph(correctedUrl);
                 item.SourceImageUrl = openGraphInfo.Image;
                 item.Url = openGraphInfo.Url;
-                item.OriginalUrl = item.OriginalUrl;
+                item.OriginalUrl = itemPost.OriginalUrl;
                 item.Title = openGraphInfo.Title;
-                item.ImageName = GetNewImageName(openGraphInfo.Image);
+                item.ImageName = GetNewImageName(openGraphInfo.Image);                
                 _blobService.UploadItemImageFromUrl(openGraphInfo.Image, item.ImageName);
             }
+            else
+            {                
+                item.Url = itemPost.Url;                
+                item.Title = itemPost.Title;
+                item.ImageName = itemPost.ImageName;
+            }
 
-            item.CatalogId = catalog.Id.Value;
-            
+            if (!string.IsNullOrEmpty(itemPost.CatalogName))
+            {
+                var newCatalog = new Catalog { UserId = user.Id.Value, AudienceType = Models.Enums.AudienceTypes.Public, Name = itemPost.CatalogName };
+                _repository.Attach(newCatalog);                
+                newCatalog.Items.Add(item);                
+            }
+            else
+            {                
+                item.CatalogId = existingCatalog.Id.Value;                
+            }
+
             _repository.Attach(item);
             _repository.SaveChanges();
 
