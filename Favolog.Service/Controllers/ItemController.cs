@@ -50,6 +50,28 @@ namespace Favolog.Service.Controllers
             if (user == null)
                 return BadRequest("User not found");
 
+            // if no item info is provided, then just create the catalog
+            if (string.IsNullOrEmpty(itemPost.Title) && string.IsNullOrEmpty(itemPost.OriginalUrl))
+            {
+                if (!string.IsNullOrEmpty(itemPost.CatalogName))
+                {
+                    var existing = _repository.Get<Catalog>().Where(c => c.Name == itemPost.CatalogName && c.UserId == user.Id.Value).SingleOrDefault();
+                    if (existing != null)
+                    {
+                        itemPost.CatalogId = existing.Id;
+                    }
+                    else
+                    {
+                        var newCatalog = new Catalog { UserId = user.Id.Value, AudienceType = Models.Enums.AudienceTypes.Public, Name = itemPost.CatalogName };
+                        _repository.Attach(newCatalog);
+                        _repository.SaveChanges();
+
+                        itemPost.CatalogId = newCatalog.Id;
+                    }                    
+                }
+                return Ok(itemPost);
+            }
+
             Catalog existingCatalog = null;
             if (itemPost.CatalogId != null)
             {
@@ -59,7 +81,7 @@ namespace Favolog.Service.Controllers
             }
 
             var item = new Item();
-                                  
+                           
             if (!string.IsNullOrEmpty(itemPost.OriginalUrl))
             {
                 //when links are copied from Amazon, it addes item title before the URL, so need to strip that off
@@ -82,9 +104,17 @@ namespace Favolog.Service.Controllers
 
             if (!string.IsNullOrEmpty(itemPost.CatalogName))
             {
-                var newCatalog = new Catalog { UserId = user.Id.Value, AudienceType = Models.Enums.AudienceTypes.Public, Name = itemPost.CatalogName };
-                _repository.Attach(newCatalog);                
-                newCatalog.Items.Add(item);                
+                var existing = _repository.Get<Catalog>().Where(c => c.Name == itemPost.CatalogName && c.UserId == user.Id.Value).SingleOrDefault();
+                if (existing != null)
+                {
+                    item.CatalogId = existing.Id.Value;
+                }
+                else
+                {
+                    var newCatalog = new Catalog { UserId = user.Id.Value, AudienceType = Models.Enums.AudienceTypes.Public, Name = itemPost.CatalogName };
+                    _repository.Attach(newCatalog);
+                    newCatalog.Items.Add(item);
+                }                
             }
             else
             {                
