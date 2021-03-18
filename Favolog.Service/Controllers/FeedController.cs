@@ -33,12 +33,12 @@ namespace Favolog.Service.Controllers
                 Items = _repository.Get<UserFeedItem>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f => f.Id).ToList()
             };
 
-            if (userFeed.Items.Count == 0)
+            if (userFeed.Items.Count ==0)
             {
                 userFeed.NewUser = true;
-                userFeed.Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(20).ToList();
-            }                            
-
+                userFeed.Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(9).ToList();
+            }
+            
             return Ok(userFeed);
         }
 
@@ -48,7 +48,7 @@ namespace Favolog.Service.Controllers
         {
             var userFeed = new UserFeed
             {
-                Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(20).ToList(),
+                Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(30).ToList(),
                 GuestUser = true
             };
             
