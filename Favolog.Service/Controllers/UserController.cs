@@ -240,7 +240,7 @@ namespace Favolog.Service.Controllers
             if (user == null)
                 return Unauthorized();
 
-            var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id.Value).ToList();                            
+            var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id.Value).OrderBy(c => c.Name).ToList();                            
             
             return Ok(catalogs);
         }

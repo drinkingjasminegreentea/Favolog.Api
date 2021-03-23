@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Favolog.Service.Models
+﻿namespace Favolog.Service.Models
 {
-    public class UserFeed: Entity
+    public class UserFeed
     {
-        public IList<UserFeedItem> Items { get; set; }
+        public PaginatedList<UserFeedItem> Page { get; set; }
 
         public bool GuestUser { get; set; }
 

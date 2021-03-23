@@ -3,6 +3,7 @@ using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Favolog.Service.Controllers
 {
@@ -12,6 +13,8 @@ namespace Favolog.Service.Controllers
     public class FeedController : ControllerBase
     {
         private readonly IFavologRepository _repository;
+        private const int _pageSize = 12;
+
         public FeedController(IFavologRepository repository)
         {
             _repository = repository;
@@ -19,7 +22,7 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [Route("user/{id}")]        
-        public ActionResult GetUser([FromRoute] int id)
+        public async Task<ActionResult> GetUser([FromRoute] int id, [FromQuery] int? pageIndex)
         {
             var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
@@ -28,15 +31,17 @@ namespace Favolog.Service.Controllers
             var feedUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
             feedUserIds.Add(user.Id.Value);
 
+            var items = await PaginatedList<UserFeedItem>.CreateAsync(_repository.Get<UserFeedItem>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f => f.Id), pageIndex ?? 1, _pageSize);
+
             var userFeed = new UserFeed
             {
-                Items = _repository.Get<UserFeedItem>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f => f.Id).ToList()
+                Page = items
             };
 
-            if (userFeed.Items.Count ==0)
+            if (userFeed.Page.Items.Count == 0)
             {
                 userFeed.NewUser = true;
-                userFeed.Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(9).ToList();
+                userFeed.Page = await PaginatedList<UserFeedItem>.CreateAsync(_repository.Get<UserFeedItem>().OrderByDescending(f => f.Id), pageIndex ?? 1, _pageSize);
             }
             
             return Ok(userFeed);
@@ -44,14 +49,16 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public ActionResult Get()
+        public async Task<ActionResult> Get([FromQuery] int? pageIndex)
         {
+            var items = await PaginatedList<UserFeedItem>.CreateAsync(_repository.Get<UserFeedItem>().OrderByDescending(f => f.Id), pageIndex ?? 1, _pageSize);
+
             var userFeed = new UserFeed
             {
-                Items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Take(30).ToList(),
+                Page = items,
                 GuestUser = true
             };
-            
+
             return Ok(userFeed);
         }
     }
