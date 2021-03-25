@@ -22,44 +22,38 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [Route("user/{id}")]        
-        public async Task<ActionResult> GetUser([FromRoute] int id, [FromQuery] int? pageIndex)
+        public async Task<ActionResult> GetUser([FromRoute] int id, [FromQuery] int? pageSize, [FromQuery] int? pageIndex)
         {
             var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
                 return NotFound();
 
+            if (!pageSize.HasValue)
+                pageSize = 6;
+            if (!pageIndex.HasValue)
+                pageIndex = 1;
+
             var feedUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
             feedUserIds.Add(user.Id.Value);
 
-            var items = await PaginatedList<UserFeedItem>.CreateAsync(_repository.Get<UserFeedItem>().Where(f => feedUserIds.Contains(f.UserId)).OrderByDescending(f => f.Id), pageIndex ?? 1, _pageSize);
+            var items = _repository.Get<UserFeedItem>().Where(f => feedUserIds.Contains(f.UserId))
+                .OrderByDescending(f => f.Id).Skip((pageIndex.Value - 1) * pageSize.Value).Take(pageSize.Value).ToList();
 
-            var userFeed = new UserFeed
-            {
-                Page = items
-            };
-
-            if (userFeed.Page.Items.Count == 0)
-            {
-                userFeed.NewUser = true;
-                userFeed.Page = await PaginatedList<UserFeedItem>.CreateAsync(_repository.Get<UserFeedItem>().OrderByDescending(f => f.Id), pageIndex ?? 1, _pageSize);
-            }
-            
-            return Ok(userFeed);
+            return Ok(items);
         }
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult> Get([FromQuery] int? pageIndex)
+        public async Task<ActionResult> Get([FromQuery] int? pageSize, [FromQuery] int? pageIndex)
         {
-            var items = await PaginatedList<UserFeedItem>.CreateAsync(_repository.Get<UserFeedItem>().OrderByDescending(f => f.Id), pageIndex ?? 1, _pageSize);
+            if (!pageSize.HasValue)
+                pageSize = 6;
+            if (!pageIndex.HasValue)
+                pageIndex = 1;
 
-            var userFeed = new UserFeed
-            {
-                Page = items,
-                GuestUser = true
-            };
+            var items = _repository.Get<UserFeedItem>().OrderByDescending(f => f.Id).Skip((pageIndex.Value - 1) * pageSize.Value).Take(pageSize.Value).ToList();
 
-            return Ok(userFeed);
+            return Ok(items);
         }
     }
 }
