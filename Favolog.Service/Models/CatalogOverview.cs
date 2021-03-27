@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Favolog.Service.Models
 {
@@ -12,6 +13,6 @@ namespace Favolog.Service.Models
 
         public int ItemCount { get; set; }
 
-        public string LastItemImage { get; set; }
+        public List<string> LastThreeImages { get; set; }
     }
 }

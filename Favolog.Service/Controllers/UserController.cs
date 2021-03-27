@@ -193,7 +193,8 @@ namespace Favolog.Service.Controllers
                     Name = c.Name,
                     AudienceType = c.AudienceType.ToString(),
                     ItemCount = c.Items.Count,
-                    LastItemImage = c.Items.OrderByDescending(i => i.Title).LastOrDefault().ImageName
+                    LastThreeImages = c.Items.Where(item => !string.IsNullOrEmpty(item.ImageName))
+                                                .OrderByDescending(i => i.Title).Select(item=>item.ImageName).Take(3).ToList()
                 }).ToList();
 
             var result = new UserProfile
