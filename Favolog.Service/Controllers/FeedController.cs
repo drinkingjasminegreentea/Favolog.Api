@@ -43,6 +43,26 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
+        [Route("profile/{username}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetProfile([FromRoute] string username, [FromQuery] int? pageSize, [FromQuery] int? pageIndex)
+        {
+            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
+            if (user == null)
+                return NotFound();
+
+            if (!pageSize.HasValue)
+                pageSize = 6;
+            if (!pageIndex.HasValue)
+                pageIndex = 1;
+                        
+            var items = _repository.Get<UserFeedItem>().Where(f => f.UserId == user.Id.Value)
+                .OrderByDescending(f => f.Id).Skip((pageIndex.Value - 1) * pageSize.Value).Take(pageSize.Value).ToList();
+
+            return Ok(items);
+        }
+
+        [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult> Get([FromQuery] int? pageSize, [FromQuery] int? pageIndex)
         {
