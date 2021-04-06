@@ -12,8 +12,7 @@ using System.Threading.Tasks;
 namespace Favolog.Service.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(Policy = "access")]
+    [Route("api/[controller]")]    
     public class ItemController : ControllerBase
     {
         private readonly IFavologRepository _repository;
@@ -45,7 +44,7 @@ namespace Favolog.Service.Controllers
                 return Unauthorized();
 
             var user = _repository.Get<User>()
-                .Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();
+                .Where(u => u.Id == loggedInUserId).SingleOrDefault();
 
             if (user == null)
                 return BadRequest("User not found");
@@ -133,9 +132,6 @@ namespace Favolog.Service.Controllers
             var existingItem = _repository.Get<Item>(item.Id).Include(i => i.Catalog).ThenInclude(c=>c.User).SingleOrDefault();
             if (existingItem == null)
                 return BadRequest();
-
-            if (!HttpContext.IsAuthorized(existingItem.Catalog.User.ExternalId))
-                return Unauthorized();
 
             existingItem.Title = item.Title;
             if (!string.IsNullOrEmpty(item.Url))

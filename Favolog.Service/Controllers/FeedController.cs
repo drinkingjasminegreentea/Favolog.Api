@@ -1,19 +1,17 @@
-﻿using Favolog.Service.Models;
+﻿using Favolog.Service.Extensions;
+using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Favolog.Service.Controllers
 {
-    [ApiController]
-    [Authorize(Policy = "access")]
+    [ApiController]    
     [Route("api/[controller]")]
     public class FeedController : ControllerBase
     {
-        private readonly IFavologRepository _repository;
-        private const int _pageSize = 12;
+        private readonly IFavologRepository _repository;        
 
         public FeedController(IFavologRepository repository)
         {
@@ -21,20 +19,22 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("user/{id}")]        
-        public async Task<ActionResult> GetUser([FromRoute] int id, [FromQuery] int? pageSize, [FromQuery] int? pageIndex)
+        [Route("user")]
+        public ActionResult GetUser([FromQuery] int? pageSize, [FromQuery] int? pageIndex)
         {
-            var user = _repository.Get<User>(id).SingleOrDefault();
-            if (user == null)
-                return NotFound();
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            var userId = loggedInUserId.Value;
 
             if (!pageSize.HasValue)
                 pageSize = 6;
             if (!pageIndex.HasValue)
                 pageIndex = 1;
 
-            var feedUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
-            feedUserIds.Add(user.Id.Value);
+            var feedUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == userId).Select(f => f.UserId).ToList();
+            feedUserIds.Add(userId);
 
             var items = _repository.Get<UserFeedItem>().Where(f => feedUserIds.Contains(f.UserId))
                 .OrderByDescending(f => f.Id).Skip((pageIndex.Value - 1) * pageSize.Value).Take(pageSize.Value).ToList();
@@ -45,7 +45,7 @@ namespace Favolog.Service.Controllers
         [HttpGet]
         [Route("profile/{username}")]
         [AllowAnonymous]
-        public async Task<ActionResult> GetProfile([FromRoute] string username, [FromQuery] int? pageSize, [FromQuery] int? pageIndex)
+        public ActionResult GetProfile([FromRoute] string username, [FromQuery] int? pageSize, [FromQuery] int? pageIndex)
         {
             var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
             if (user == null)
@@ -64,7 +64,7 @@ namespace Favolog.Service.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult> Get([FromQuery] int? pageSize, [FromQuery] int? pageIndex)
+        public ActionResult Get([FromQuery] int? pageSize, [FromQuery] int? pageIndex)
         {
             if (!pageSize.HasValue)
                 pageSize = 6;

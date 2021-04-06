@@ -11,8 +11,7 @@ using System.Text.RegularExpressions;
 namespace Favolog.Service.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(Policy = "access")]
+    [Route("api/[controller]")]    
     public class UserController : ControllerBase
     {
         private readonly IFavologRepository _repository;
@@ -33,9 +32,6 @@ namespace Favolog.Service.Controllers
         [HttpPost]
         public ActionResult Post([FromBody] User user)
         {
-            if (!HttpContext.IsAuthorized(user.ExternalId))
-                return Unauthorized();
-
             var existingUser = _repository.Get<User>().Where(u => u.ExternalId == user.ExternalId).SingleOrDefault();
 
             if (existingUser != null)
@@ -73,9 +69,6 @@ namespace Favolog.Service.Controllers
             var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
                 return NotFound();
-
-            if (!HttpContext.IsAuthorized(user.ExternalId))
-                return Unauthorized();
 
             var followingUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
 
@@ -150,9 +143,6 @@ namespace Favolog.Service.Controllers
             if (existingUser == null)
                 return BadRequest();
 
-            if (!HttpContext.IsAuthorized(existingUser.ExternalId))
-                return Unauthorized();
-
             existingUser.Username = user.Username;
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
@@ -216,9 +206,6 @@ namespace Favolog.Service.Controllers
             if (user == null)
                 return BadRequest();
 
-            if (!HttpContext.IsAuthorized(user.ExternalId))
-                return Unauthorized();
-
             var items = user.Catalogs.SelectMany(c => c.Items);
 
             _repository.Delete(items);
@@ -237,7 +224,7 @@ namespace Favolog.Service.Controllers
             if (loggedInUserId == null)
                 return Unauthorized();
 
-            var user = _repository.Get<User>().Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();
+            var user = _repository.Get<User>().Where(u => u.Id == loggedInUserId).SingleOrDefault();
             if (user == null)
                 return Unauthorized();
 

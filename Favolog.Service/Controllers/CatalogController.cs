@@ -9,8 +9,7 @@ using System.Linq;
 namespace Favolog.Service.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(Policy = "access")]
+    [Route("api/[controller]")]    
     public class CatalogController : ControllerBase
     {
         private readonly IFavologRepository _repository;
@@ -53,7 +52,7 @@ namespace Favolog.Service.Controllers
             if (catalog == null)
                 return BadRequest();
 
-            catalog.IsEditable = loggedInUserId == catalog.User.ExternalId;
+            catalog.IsEditable = loggedInUserId == catalog.User.Id;
 
             return Ok(catalog);
         }
@@ -66,20 +65,16 @@ namespace Favolog.Service.Controllers
             if (loggedInUserId == null)
                 return Unauthorized();
 
-            var user = _repository.Get<User>()                
-                .Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();
-
-            if (user == null)
-                return BadRequest("User not found");
+            var userId = loggedInUserId.Value;
                                                
             var existingOne = _repository.Get<Catalog>()
-                .Where(c => c.Name == catalog.Name && c.UserId == user.Id)
+                .Where(c => c.Name == catalog.Name && c.UserId == userId)
                 .SingleOrDefault();
 
             if (existingOne != null)
                 return BadRequest("Duplicate catalog name");
 
-            catalog.UserId = user.Id.Value;
+            catalog.UserId = userId;
 
             _repository.Attach(catalog);
             _repository.SaveChanges();
@@ -94,7 +89,13 @@ namespace Favolog.Service.Controllers
             if (existingOne == null)
                 return BadRequest();
 
-            if (!HttpContext.IsAuthorized(existingOne.User.ExternalId))
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            var userId = loggedInUserId.Value;
+
+            if (existingOne.UserId != userId)
                 return Unauthorized();
 
             existingOne.Name = catalog.Name;
@@ -111,8 +112,6 @@ namespace Favolog.Service.Controllers
             if (catalog == null)
                 return BadRequest();
 
-            if (!HttpContext.IsAuthorized(catalog.User.ExternalId))
-                return Unauthorized();
 
             _repository.Delete(catalog.Items);
             _repository.Delete(catalog);
@@ -128,9 +127,6 @@ namespace Favolog.Service.Controllers
             var catalog = _repository.Get<Catalog>(id).Include(c => c.User).SingleOrDefault();
             if (catalog == null)
                 return BadRequest();
-
-            if (!HttpContext.IsAuthorized(catalog.User.ExternalId))
-                return Unauthorized();
 
             var item = _repository.Get<Item>().Where(ci => ci.CatalogId == id && ci.Id == itemId).SingleOrDefault();
 
