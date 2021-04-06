@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Favolog.Service.Models
 {
@@ -27,5 +28,11 @@ namespace Favolog.Service.Models
         public List<User> Followers { get; set; }
 
         public List<User> Following { get; set; }
+
+        [NotMapped]
+        public string DisplayName { get; set; }
+
+        [NotMapped]
+        public bool IsNew { get; set; }
     }
 }

@@ -33,33 +33,18 @@ namespace Favolog.Service.Controllers
         public ActionResult Post([FromBody] User user)
         {
             var existingUser = _repository.Get<User>().Where(u => u.ExternalId == user.ExternalId).SingleOrDefault();
-
+                        
             if (existingUser != null)
             {                
                 return Ok(existingUser);
             }
+            
+            user.Username = GenerateUsername(user);
+            user.IsNew = true;
 
-            if (string.IsNullOrEmpty(user.Username)) {
-                if (string.IsNullOrEmpty(user.FirstName))
-                    return BadRequest("Both username and first name cannot be empty");
-
-                user.Username = $"{user.FirstName}{user.LastName}";
-            }
-
-            var usernameRegex = new Regex(@"^[a-zA-Z0-9_]*$");
-
-            user.Username = user.Username.Replace(" ", string.Empty).Replace("'", string.Empty).Replace("-", string.Empty);
-
-            if (!usernameRegex.IsMatch(user.Username))
-            {
-                if (!string.IsNullOrEmpty(user.EmailAddress))
-                    user.Username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf('@'));
-                else
-                    throw new Exception($"User with no email address and no suitable username was generated {user.ExternalId}");
-            }
             _repository.Attach(user);
             _repository.SaveChanges();
-            return Ok(user); 
+            return Ok(user);
         }
 
         [HttpGet]
@@ -231,6 +216,39 @@ namespace Favolog.Service.Controllers
             var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id.Value).OrderBy(c => c.Name).ToList();                            
             
             return Ok(catalogs);
+        }
+
+        private string GenerateUsername(User user)
+        {
+            var usernameRegex = new Regex(@"^[a-zA-Z0-9_]*$");
+            string username = string.Empty;
+
+            //generate username using display name
+            if (string.IsNullOrEmpty(user.DisplayName))
+            {
+                username = user.DisplayName.Replace(" ", string.Empty).Replace("'", string.Empty).Replace("-", string.Empty);
+            }
+
+            // or generate username using email
+            if (string.IsNullOrEmpty(username) || !usernameRegex.IsMatch(username))
+            {
+                if (!string.IsNullOrEmpty(user.EmailAddress))
+                    username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf('@'));
+            }
+
+            // or generate default username
+            if (string.IsNullOrEmpty(username) || !usernameRegex.IsMatch(username))
+            {
+                username = "user";
+            }
+
+            var existingCount = _repository.Get<User>().Where(u => u.Username == username).Count();
+            if (existingCount > 0)
+            {
+                username = $"{username}{existingCount + 1}";
+            }
+
+            return username;
         }
     }
 }
