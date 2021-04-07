@@ -4,6 +4,7 @@ using Favolog.Service.AuthorizationPolicies;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
 using Favolog.Service.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
 
@@ -57,6 +59,24 @@ namespace Favolog.Service
             services.AddControllers(options =>
                 options.EnableEndpointRouting = false)
                 .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
+
+            var firebaseProjectId = Configuration.GetValue<string>("Firebase:ProjectId");
+            var tokenIssuer = $"https://securetoken.google.com/{firebaseProjectId}";
+
+            services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.Authority = tokenIssuer;
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = tokenIssuer,
+                        ValidateAudience = true,
+                        ValidAudience = firebaseProjectId,
+                        ValidateLifetime = true
+                    };
+                });
 
             services.AddAuthorization(options =>
             {
