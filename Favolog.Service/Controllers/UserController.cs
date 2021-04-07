@@ -4,7 +4,6 @@ using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -21,11 +20,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{id}")]
+        [Route("{username}")]
         [AllowAnonymous]
-        public User Get([FromRoute] int id)
+        public User Get([FromRoute] string username)
         {
-            return _repository.Get<User>(id)                
+            return _repository.Get<User>().Where(u => u.Username == username)
                 .SingleOrDefault();
         }
 
@@ -67,7 +66,7 @@ namespace Favolog.Service.Controllers
         public ActionResult Follow([FromBody] UserFollow userFollow)
         {
             var existingFollow = _repository.Get<UserFollow>()
-                                    .Where(f => f.UserId == userFollow.UserId && f.FollowerId == userFollow.FollowerId)
+                                    .Where(f => f.User.Username == userFollow.Username && f.Follower.Username == userFollow.FollowerUsername)
                                     .SingleOrDefault();
 
             if (existingFollow != null)
@@ -81,11 +80,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{followerId}/IsFollowing/{userId}")]
-        public ActionResult IsFollowing([FromRoute] int followerId, [FromRoute] int userId)
+        [Route("{followerUsername}/IsFollowing/{username}")]
+        public ActionResult IsFollowing([FromRoute] string followerUsername, [FromRoute] string username)
         {
             var isFollowing = _repository.Get<UserFollow>()
-                                    .Any(f => f.UserId == userId && f.FollowerId == followerId);                                    
+                                    .Any(f => f.User.Username == username && f.Follower.Username == followerUsername);                                    
                         
             return Ok(isFollowing);
         }
@@ -124,7 +123,11 @@ namespace Favolog.Service.Controllers
         [HttpPut]
         public ActionResult<User> Put([FromBody] User user)
         {
-            var existingUser = _repository.Get<User>(user.Id.Value).SingleOrDefault();
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            var existingUser = _repository.Get<User>(loggedInUserId.Value).SingleOrDefault();
             if (existingUser == null)
                 return BadRequest();
 
@@ -165,8 +168,7 @@ namespace Favolog.Service.Controllers
                 new CatalogOverview
                 {
                     Id = c.Id,
-                    Name = c.Name,
-                    AudienceType = c.AudienceType.ToString(),
+                    Name = c.Name,                    
                     ItemCount = c.Items.Count,
                     LastThreeImages = c.Items.Where(item => !string.IsNullOrEmpty(item.ImageName))
                                                 .OrderByDescending(i => i.Title).Select(item=>item.ImageName).Take(3).ToList()
@@ -184,12 +186,22 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpDelete]
-        [Route("{id}")]
-        public ActionResult Delete([FromRoute] int id)
+        [Route("{username}")]
+        public ActionResult Delete([FromRoute] string username)
         {
-            var user = _repository.Get<User>(id).Include(u=>u.Catalogs).ThenInclude(c=>c.Items).SingleOrDefault();
+            var user = _repository.Get<User>().Where(u => u.Username == username)
+                .Include(u=>u.Catalogs).ThenInclude(c=>c.Items)
+                .SingleOrDefault();
+
             if (user == null)
                 return BadRequest();
+
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            if (user.Id.Value != loggedInUserId.Value)
+                return Unauthorized();
 
             var items = user.Catalogs.SelectMany(c => c.Items);
 

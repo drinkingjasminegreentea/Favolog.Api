@@ -72,7 +72,7 @@ namespace Favolog.Service.Controllers
                 .SingleOrDefault();
 
             if (existingOne != null)
-                return BadRequest("Duplicate catalog name");
+                return Ok(existingOne);
 
             catalog.UserId = userId;
 

@@ -1,5 +1,6 @@
 ﻿using Favolog.Service.Models;
 using Favolog.Service.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -16,7 +17,8 @@ namespace Favolog.Service.Controllers
             _repository = repository;
         }
 
-        [HttpGet]        
+        [HttpGet]       
+        [AllowAnonymous]
         public ActionResult<SearchResults> Get([FromQuery] string query)
         {
             var searchResults = new SearchResults { 

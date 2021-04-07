@@ -1,14 +1,22 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Favolog.Service.Models
 {
     public class UserFollow: Entity
     {
-        [Required]
+        public User User { get; set; }
+
         public int UserId { get; set; }
 
-        [Required]
+        [NotMapped]
+        public string Username { get; set; }
+        
+        public User Follower { get; set; }
+
         public int FollowerId { get; set; }
+
+        [NotMapped]
+        public string FollowerUsername { get; set; }
     }
 }
 
