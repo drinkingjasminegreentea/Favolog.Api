@@ -5,6 +5,7 @@ using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
 using Favolog.Service.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
