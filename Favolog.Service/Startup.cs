@@ -4,6 +4,8 @@ using Favolog.Service.AuthorizationPolicies;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
 using Favolog.Service.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
 
@@ -50,26 +53,40 @@ namespace Favolog.Service
                          .AllowAnyMethod()
                          .AllowAnyHeader();
                     });
-            });
-
-            services.AddMicrosoftIdentityWebApiAuthentication(Configuration, "AzureAdB2C");
+            });            
 
             services.AddControllers(options =>
                 options.EnableEndpointRouting = false)
                 .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
 
+            services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.Authority = "https://securetoken.google.com/favolog-development";
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = "https://securetoken.google.com/favolog-development",
+                        ValidateAudience = true,
+                        ValidAudience = "favolog-development",
+                        ValidateLifetime = true
+                    };
+                });
+
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("access",
-                        policy => policy.Requirements.Add(new ScopesRequirement("access")));
-            });
+                options.AddPolicy("UserAccessRequirement",
+                    policy => policy.Requirements.Add(new UserAccessRequirement()));
+            });        
 
             services.Configure<AppSettings>(Configuration.GetSection(
                                         AppSettings.Section));
 
             services.AddScoped<IFavologRepository, FavologRepository>();
             services.AddScoped<IBlobStorageService, BlobStorageService>();
-            services.AddHttpClient<IOpenGraphGenerator, OpenGraphGenerator>();            
+            services.AddHttpClient<IOpenGraphGenerator, OpenGraphGenerator>();
+            services.AddTransient<IAuthorizationHandler, UserAccessRequirementHandler>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -89,7 +106,7 @@ namespace Favolog.Service
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                endpoints.MapControllers().RequireAuthorization("UserAccessRequirement");
             });            
 
         }

@@ -32,7 +32,5 @@ namespace Favolog.Service.Models
 
         public string Comment { get; set; }
 
-        public int AudienceType { get; set; }
-
     }
 }

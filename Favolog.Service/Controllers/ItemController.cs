@@ -12,8 +12,7 @@ using System.Threading.Tasks;
 namespace Favolog.Service.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(Policy = "access")]
+    [Route("api/[controller]")]    
     public class ItemController : ControllerBase
     {
         private readonly IFavologRepository _repository;
@@ -38,87 +37,29 @@ namespace Favolog.Service.Controllers
         }             
 
         [HttpPost]        
-        public async Task<ActionResult> Post([FromBody] ItemPost itemPost)
+        public async Task<ActionResult> Post([FromBody] Item item)
         {
             var loggedInUserId = HttpContext.GetLoggedInUserId();
             if (loggedInUserId == null)
                 return Unauthorized();
 
-            var user = _repository.Get<User>()
-                .Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();
+            var userId = loggedInUserId.Value;
 
-            if (user == null)
-                return BadRequest("User not found");
+            var catalog = _repository.Get<Catalog>().Where(c => c.Id == item.CatalogId && c.UserId == userId).SingleOrDefault();
+            if (catalog == null)
+                return BadRequest("Catalog not found");
 
-            // if no item info is provided, then just create the catalog
-            if (string.IsNullOrEmpty(itemPost.Title) && string.IsNullOrEmpty(itemPost.OriginalUrl))
-            {
-                if (!string.IsNullOrEmpty(itemPost.CatalogName))
-                {
-                    var existing = _repository.Get<Catalog>().Where(c => c.Name == itemPost.CatalogName && c.UserId == user.Id.Value).SingleOrDefault();
-                    if (existing != null)
-                    {
-                        itemPost.CatalogId = existing.Id;
-                    }
-                    else
-                    {
-                        var newCatalog = new Catalog { UserId = user.Id.Value, AudienceType = Models.Enums.AudienceTypes.Public, Name = itemPost.CatalogName };
-                        _repository.Attach(newCatalog);
-                        _repository.SaveChanges();
-
-                        itemPost.CatalogId = newCatalog.Id;
-                    }                    
-                }
-                return Ok(itemPost);
-            }
-
-            Catalog existingCatalog = null;
-            if (itemPost.CatalogId != null)
-            {
-                existingCatalog = _repository.Get<Catalog>().Where(c => c.Id == itemPost.CatalogId && c.UserId == user.Id.Value).SingleOrDefault();
-                if (existingCatalog == null)
-                    return BadRequest("Catalog not found");
-            }
-
-            var item = new Item();
-                           
-            if (!string.IsNullOrEmpty(itemPost.OriginalUrl))
+            if (!string.IsNullOrEmpty(item.OriginalUrl))
             {
                 //when links are copied from Amazon, it addes item title before the URL, so need to strip that off
-                var startIndex = itemPost.OriginalUrl.IndexOf("https://");
-                var correctedUrl = itemPost.OriginalUrl.Substring(startIndex, itemPost.OriginalUrl.Length - startIndex);
+                var startIndex = item.OriginalUrl.IndexOf("https://");
+                var correctedUrl = item.OriginalUrl.Substring(startIndex, item.OriginalUrl.Length - startIndex);
                 var openGraphInfo = await _openGraphGenerator.GetOpenGraph(correctedUrl);
                 item.SourceImageUrl = openGraphInfo.Image;
-                item.Url = openGraphInfo.Url;
-                item.OriginalUrl = itemPost.OriginalUrl;
+                item.Url = openGraphInfo.Url;                
                 item.Title = openGraphInfo.Title;
                 item.ImageName = GetNewImageName(openGraphInfo.Image);                
                 _blobService.UploadItemImageFromUrl(openGraphInfo.Image, item.ImageName);
-            }
-            else
-            {                
-                item.Url = itemPost.Url;                
-                item.Title = itemPost.Title;
-                item.ImageName = itemPost.ImageName;
-            }
-
-            if (!string.IsNullOrEmpty(itemPost.CatalogName))
-            {
-                var existing = _repository.Get<Catalog>().Where(c => c.Name == itemPost.CatalogName && c.UserId == user.Id.Value).SingleOrDefault();
-                if (existing != null)
-                {
-                    item.CatalogId = existing.Id.Value;
-                }
-                else
-                {
-                    var newCatalog = new Catalog { UserId = user.Id.Value, AudienceType = Models.Enums.AudienceTypes.Public, Name = itemPost.CatalogName };
-                    _repository.Attach(newCatalog);
-                    newCatalog.Items.Add(item);
-                }                
-            }
-            else
-            {                
-                item.CatalogId = existingCatalog.Id.Value;                
             }
 
             _repository.Attach(item);
@@ -133,9 +74,6 @@ namespace Favolog.Service.Controllers
             var existingItem = _repository.Get<Item>(item.Id).Include(i => i.Catalog).ThenInclude(c=>c.User).SingleOrDefault();
             if (existingItem == null)
                 return BadRequest();
-
-            if (!HttpContext.IsAuthorized(existingItem.Catalog.User.ExternalId))
-                return Unauthorized();
 
             existingItem.Title = item.Title;
             if (!string.IsNullOrEmpty(item.Url))

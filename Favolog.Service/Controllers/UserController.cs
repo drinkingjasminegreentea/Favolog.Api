@@ -4,15 +4,13 @@ using Favolog.Service.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Favolog.Service.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(Policy = "access")]
+    [Route("api/[controller]")]    
     public class UserController : ControllerBase
     {
         private readonly IFavologRepository _repository;
@@ -22,48 +20,30 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{id}")]
+        [Route("{username}")]
         [AllowAnonymous]
-        public User Get([FromRoute] int id)
+        public User Get([FromRoute] string username)
         {
-            return _repository.Get<User>(id)                
+            return _repository.Get<User>().Where(u => u.Username == username)
                 .SingleOrDefault();
         }
 
         [HttpPost]
         public ActionResult Post([FromBody] User user)
         {
-            if (!HttpContext.IsAuthorized(user.ExternalId))
-                return Unauthorized();
-
             var existingUser = _repository.Get<User>().Where(u => u.ExternalId == user.ExternalId).SingleOrDefault();
-
+                        
             if (existingUser != null)
             {                
                 return Ok(existingUser);
             }
+            
+            user.Username = GenerateUsername(user);
+            user.IsNew = true;
 
-            if (string.IsNullOrEmpty(user.Username)) {
-                if (string.IsNullOrEmpty(user.FirstName))
-                    return BadRequest("Both username and first name cannot be empty");
-
-                user.Username = $"{user.FirstName}{user.LastName}";
-            }
-
-            var usernameRegex = new Regex(@"^[a-zA-Z0-9_]*$");
-
-            user.Username = user.Username.Replace(" ", string.Empty).Replace("'", string.Empty).Replace("-", string.Empty);
-
-            if (!usernameRegex.IsMatch(user.Username))
-            {
-                if (!string.IsNullOrEmpty(user.EmailAddress))
-                    user.Username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf('@'));
-                else
-                    throw new Exception($"User with no email address and no suitable username was generated {user.ExternalId}");
-            }
             _repository.Attach(user);
             _repository.SaveChanges();
-            return Ok(user); 
+            return Ok(user);
         }
 
         [HttpGet]
@@ -73,9 +53,6 @@ namespace Favolog.Service.Controllers
             var user = _repository.Get<User>(id).SingleOrDefault();
             if (user == null)
                 return NotFound();
-
-            if (!HttpContext.IsAuthorized(user.ExternalId))
-                return Unauthorized();
 
             var followingUserIds = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Select(f => f.UserId).ToList();
 
@@ -88,14 +65,28 @@ namespace Favolog.Service.Controllers
         [Route("Follow")]        
         public ActionResult Follow([FromBody] UserFollow userFollow)
         {
+            if (string.IsNullOrEmpty(userFollow.Username) || string.IsNullOrEmpty(userFollow.FollowerUsername))
+                return BadRequest("Username or FollowerUsername is empty");
+
+            var user = _repository.Get<User>()
+                .Where(u => u.Username == userFollow.Username).SingleOrDefault();
+
+            var follower = _repository.Get<User>()
+                .Where(u => u.Username == userFollow.FollowerUsername).SingleOrDefault();
+
+            if (user == null || follower == null)
+                return NotFound();
+
             var existingFollow = _repository.Get<UserFollow>()
-                                    .Where(f => f.UserId == userFollow.UserId && f.FollowerId == userFollow.FollowerId)
+                                    .Where(f => f.UserId == user.Id.Value && f.FollowerId == follower.Id.Value)
                                     .SingleOrDefault();
 
             if (existingFollow != null)
                 _repository.Delete(existingFollow);
             else
-                _repository.Attach(userFollow);
+            {
+                _repository.Attach(new UserFollow { UserId = user.Id.Value, FollowerId = follower.Id.Value});
+            }                
 
             _repository.SaveChanges();
 
@@ -103,11 +94,11 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{followerId}/IsFollowing/{userId}")]
-        public ActionResult IsFollowing([FromRoute] int followerId, [FromRoute] int userId)
+        [Route("{followerUsername}/IsFollowing/{username}")]
+        public ActionResult IsFollowing([FromRoute] string followerUsername, [FromRoute] string username)
         {
             var isFollowing = _repository.Get<UserFollow>()
-                                    .Any(f => f.UserId == userId && f.FollowerId == followerId);                                    
+                                    .Any(f => f.User.Username == username && f.Follower.Username == followerUsername);                                    
                         
             return Ok(isFollowing);
         }
@@ -146,12 +137,13 @@ namespace Favolog.Service.Controllers
         [HttpPut]
         public ActionResult<User> Put([FromBody] User user)
         {
-            var existingUser = _repository.Get<User>(user.Id.Value).SingleOrDefault();
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            var existingUser = _repository.Get<User>(loggedInUserId.Value).SingleOrDefault();
             if (existingUser == null)
                 return BadRequest();
-
-            if (!HttpContext.IsAuthorized(existingUser.ExternalId))
-                return Unauthorized();
 
             existingUser.Username = user.Username;
             existingUser.FirstName = user.FirstName;
@@ -190,8 +182,7 @@ namespace Favolog.Service.Controllers
                 new CatalogOverview
                 {
                     Id = c.Id,
-                    Name = c.Name,
-                    AudienceType = c.AudienceType.ToString(),
+                    Name = c.Name,                    
                     ItemCount = c.Items.Count,
                     LastThreeImages = c.Items.Where(item => !string.IsNullOrEmpty(item.ImageName))
                                                 .OrderByDescending(i => i.Title).Select(item=>item.ImageName).Take(3).ToList()
@@ -209,14 +200,21 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpDelete]
-        [Route("{id}")]
-        public ActionResult Delete([FromRoute] int id)
+        [Route("{username}")]
+        public ActionResult Delete([FromRoute] string username)
         {
-            var user = _repository.Get<User>(id).Include(u=>u.Catalogs).ThenInclude(c=>c.Items).SingleOrDefault();
+            var user = _repository.Get<User>().Where(u => u.Username == username)
+                .Include(u=>u.Catalogs).ThenInclude(c=>c.Items)
+                .SingleOrDefault();
+
             if (user == null)
                 return BadRequest();
 
-            if (!HttpContext.IsAuthorized(user.ExternalId))
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            if (user.Id.Value != loggedInUserId.Value)
                 return Unauthorized();
 
             var items = user.Catalogs.SelectMany(c => c.Items);
@@ -237,13 +235,46 @@ namespace Favolog.Service.Controllers
             if (loggedInUserId == null)
                 return Unauthorized();
 
-            var user = _repository.Get<User>().Where(u => u.ExternalId == loggedInUserId).SingleOrDefault();
+            var user = _repository.Get<User>().Where(u => u.Id == loggedInUserId).SingleOrDefault();
             if (user == null)
                 return Unauthorized();
 
             var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id.Value).OrderBy(c => c.Name).ToList();                            
             
             return Ok(catalogs);
+        }
+
+        private string GenerateUsername(User user)
+        {
+            var usernameRegex = new Regex(@"^[a-zA-Z0-9_]*$");
+            string username = string.Empty;
+
+            //generate username using display name
+            if (string.IsNullOrEmpty(user.DisplayName))
+            {
+                username = user.DisplayName.Replace(" ", string.Empty).Replace("'", string.Empty).Replace("-", string.Empty);
+            }
+
+            // or generate username using email
+            if (string.IsNullOrEmpty(username) || !usernameRegex.IsMatch(username))
+            {
+                if (!string.IsNullOrEmpty(user.EmailAddress))
+                    username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf('@'));
+            }
+
+            // or generate default username
+            if (string.IsNullOrEmpty(username) || !usernameRegex.IsMatch(username))
+            {
+                username = "user";
+            }
+
+            var existingCount = _repository.Get<User>().Where(u => u.Username == username).Count();
+            if (existingCount > 0)
+            {
+                username = $"{username}{existingCount + 1}";
+            }
+
+            return username;
         }
     }
 }
