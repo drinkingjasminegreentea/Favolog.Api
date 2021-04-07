@@ -65,14 +65,28 @@ namespace Favolog.Service.Controllers
         [Route("Follow")]        
         public ActionResult Follow([FromBody] UserFollow userFollow)
         {
+            if (string.IsNullOrEmpty(userFollow.Username) || string.IsNullOrEmpty(userFollow.FollowerUsername))
+                return BadRequest("Username or FollowerUsername is empty");
+
+            var user = _repository.Get<User>()
+                .Where(u => u.Username == userFollow.Username).SingleOrDefault();
+
+            var follower = _repository.Get<User>()
+                .Where(u => u.Username == userFollow.FollowerUsername).SingleOrDefault();
+
+            if (user == null || follower == null)
+                return NotFound();
+
             var existingFollow = _repository.Get<UserFollow>()
-                                    .Where(f => f.User.Username == userFollow.Username && f.Follower.Username == userFollow.FollowerUsername)
+                                    .Where(f => f.UserId == user.Id.Value && f.FollowerId == follower.Id.Value)
                                     .SingleOrDefault();
 
             if (existingFollow != null)
                 _repository.Delete(existingFollow);
             else
-                _repository.Attach(userFollow);
+            {
+                _repository.Attach(new UserFollow { UserId = user.Id.Value, FollowerId = follower.Id.Value});
+            }                
 
             _repository.SaveChanges();
 

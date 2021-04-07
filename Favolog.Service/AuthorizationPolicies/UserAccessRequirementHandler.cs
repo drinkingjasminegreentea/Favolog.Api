@@ -13,7 +13,7 @@ namespace Favolog.Service.AuthorizationPolicies
         private readonly IHttpContextAccessor _httpContextAccessor;        
 
         /// <summary>
-        /// IOC Constructor
+        /// This handler contains temporary code to link Azure AD B2C user ids to Firebase ones by email address
         /// </summary>
         /// <param name="httpContextAccessor"></param>
         public UserAccessRequirementHandler(IHttpContextAccessor httpContextAccessor)
