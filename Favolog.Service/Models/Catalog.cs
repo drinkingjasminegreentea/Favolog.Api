@@ -1,5 +1,4 @@
-﻿using Favolog.Service.Models.Enums;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -9,9 +8,6 @@ namespace Favolog.Service.Models
     {
         [Required]
         public string Name { get; set; }
-
-        [Required]
-        public AudienceTypes AudienceType { get; set; }
 
         [Required]
         public int UserId { get; set; }

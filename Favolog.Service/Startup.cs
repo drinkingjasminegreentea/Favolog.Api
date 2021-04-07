@@ -52,9 +52,7 @@ namespace Favolog.Service
                          .AllowAnyMethod()
                          .AllowAnyHeader();
                     });
-            });
-
-            services.AddMicrosoftIdentityWebApiAuthentication(Configuration, "AzureAdB2C");
+            });            
 
             services.AddControllers(options =>
                 options.EnableEndpointRouting = false)
@@ -80,16 +78,17 @@ namespace Favolog.Service
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("access",
-                        policy => policy.Requirements.Add(new ScopesRequirement("access")));
-            });
+                options.AddPolicy("UserAccessRequirement",
+                    policy => policy.Requirements.Add(new UserAccessRequirement()));
+            });        
 
             services.Configure<AppSettings>(Configuration.GetSection(
                                         AppSettings.Section));
 
             services.AddScoped<IFavologRepository, FavologRepository>();
             services.AddScoped<IBlobStorageService, BlobStorageService>();
-            services.AddHttpClient<IOpenGraphGenerator, OpenGraphGenerator>();            
+            services.AddHttpClient<IOpenGraphGenerator, OpenGraphGenerator>();
+            services.AddTransient<IAuthorizationHandler, UserAccessRequirementHandler>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -109,7 +108,7 @@ namespace Favolog.Service
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                endpoints.MapControllers().RequireAuthorization("UserAccessRequirement");
             });            
 
         }
