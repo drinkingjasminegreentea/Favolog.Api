@@ -2,7 +2,6 @@
 using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;

@@ -1,6 +1,7 @@
 ﻿using Favolog.Service.Extensions;
 using Favolog.Service.Models;
 using Favolog.Service.Repository;
+using Favolog.Service.ServiceClients;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,9 +14,12 @@ namespace Favolog.Service.Controllers
     public class CatalogController : ControllerBase
     {
         private readonly IFavologRepository _repository;
-        public CatalogController(IFavologRepository repository)
+        private readonly IBlobStorageService _blobService;
+
+        public CatalogController(IFavologRepository repository, IBlobStorageService blobService)
         {
             _repository = repository;
+            _blobService = blobService;
         }
 
         [HttpGet]
@@ -113,6 +117,11 @@ namespace Favolog.Service.Controllers
                 return BadRequest();
 
 
+            foreach(var item in catalog.Items)
+            {
+                _blobService.DeleteImage(item.ImageName);
+            }
+
             _repository.Delete(catalog.Items);
             _repository.Delete(catalog);
             _repository.SaveChanges();
@@ -128,7 +137,8 @@ namespace Favolog.Service.Controllers
             if (catalog == null)
                 return BadRequest();
 
-            var item = _repository.Get<Item>().Where(ci => ci.CatalogId == id && ci.Id == itemId).SingleOrDefault();
+            var item = _repository.Get<Item>().Where(ci => ci.CatalogId == id && ci.Id == itemId).SingleOrDefault();            
+            _blobService.DeleteImage(item.ImageName);
 
             _repository.Delete(item);            
             _repository.SaveChanges();

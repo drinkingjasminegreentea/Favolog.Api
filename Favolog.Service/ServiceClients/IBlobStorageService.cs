@@ -5,5 +5,7 @@ namespace Favolog.Service.ServiceClients
     public interface IBlobStorageService
     {
         void UploadItemImageFromUrl(string sourceUrl, string blobName);
+
+        void DeleteImage(string blobName);
     }
 }

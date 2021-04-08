@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace Favolog.Service.Controllers
 {
@@ -28,6 +27,20 @@ namespace Favolog.Service.Controllers
                 .SingleOrDefault();
         }
 
+        [HttpGet]                
+        public ActionResult Get()
+        {
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
+
+            var user = _repository.Get<User>(loggedInUserId.Value).SingleOrDefault();
+            if (user == null)
+                return BadRequest();
+
+            return Ok(user);
+        }
+
         [HttpPost]
         public ActionResult Post([FromBody] User user)
         {
@@ -38,7 +51,7 @@ namespace Favolog.Service.Controllers
                 return Ok(existingUser);
             }
             
-            user.Username = GenerateUsername(user);
+            user.GenerateUsername(_repository);
             user.IsNew = true;
 
             _repository.Attach(user);
@@ -244,37 +257,6 @@ namespace Favolog.Service.Controllers
             return Ok(catalogs);
         }
 
-        private string GenerateUsername(User user)
-        {
-            var usernameRegex = new Regex(@"^[a-zA-Z0-9_]*$");
-            string username = string.Empty;
-
-            //generate username using display name
-            if (string.IsNullOrEmpty(user.DisplayName))
-            {
-                username = user.DisplayName.Replace(" ", string.Empty).Replace("'", string.Empty).Replace("-", string.Empty);
-            }
-
-            // or generate username using email
-            if (string.IsNullOrEmpty(username) || !usernameRegex.IsMatch(username))
-            {
-                if (!string.IsNullOrEmpty(user.EmailAddress))
-                    username = user.EmailAddress.Substring(0, user.EmailAddress.IndexOf('@'));
-            }
-
-            // or generate default username
-            if (string.IsNullOrEmpty(username) || !usernameRegex.IsMatch(username))
-            {
-                username = "user";
-            }
-
-            var existingCount = _repository.Get<User>().Where(u => u.Username == username).Count();
-            if (existingCount > 0)
-            {
-                username = $"{username}{existingCount + 1}";
-            }
-
-            return username;
-        }
+        
     }
 }

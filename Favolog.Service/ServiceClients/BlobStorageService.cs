@@ -24,5 +24,16 @@ namespace Favolog.Service.ServiceClients
             var blockBlobClient = containerClient.GetBlobClient(blobName);
             blockBlobClient.SyncCopyFromUri(new Uri(sourceUrl));            
         }
+
+        public void DeleteImage(string blobName)
+        {
+            if (string.IsNullOrEmpty(blobName))
+                return;
+
+            var blobServiceClient = new BlobServiceClient(appSettings.AzureBlobConnectionsString);
+            var containerClient = blobServiceClient.GetBlobContainerClient("itemimages");
+            var blockBlobClient = containerClient.GetBlobClient(blobName);
+            blockBlobClient.Delete();
+        }
     }
 }
