@@ -30,7 +30,5 @@ namespace Favolog.Service.Models
         [NotMapped]
         public string DisplayName { get; set; }
 
-        [NotMapped]
-        public bool IsNew { get; set; }
     }
 }

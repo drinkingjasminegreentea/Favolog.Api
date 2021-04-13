@@ -16,16 +16,7 @@ namespace Favolog.Service.Controllers
         public UserController(IFavologRepository repository)
         {
             _repository = repository;
-        }
-
-        [HttpGet]
-        [Route("{username}")]
-        [AllowAnonymous]
-        public User Get([FromRoute] string username)
-        {
-            return _repository.Get<User>().Where(u => u.Username == username)
-                .SingleOrDefault();
-        }
+        }        
 
         [HttpGet]                
         public ActionResult Get()
@@ -51,9 +42,7 @@ namespace Favolog.Service.Controllers
                 return Ok(existingUser);
             }
             
-            user.GenerateUsername(_repository);
-            user.IsNew = true;
-
+            user.GenerateUsername(_repository);            
             _repository.Attach(user);
             _repository.SaveChanges();
             return Ok(user);
@@ -104,16 +93,6 @@ namespace Favolog.Service.Controllers
             _repository.SaveChanges();
 
             return Ok();                    
-        }
-
-        [HttpGet]
-        [Route("{followerUsername}/IsFollowing/{username}")]
-        public ActionResult IsFollowing([FromRoute] string followerUsername, [FromRoute] string username)
-        {
-            var isFollowing = _repository.Get<UserFollow>()
-                                    .Any(f => f.User.Username == username && f.Follower.Username == followerUsername);                                    
-                        
-            return Ok(isFollowing);
         }
 
         [HttpGet]
@@ -181,35 +160,33 @@ namespace Favolog.Service.Controllers
         [HttpGet]
         [Route("{username}/profile")]
         [AllowAnonymous]
-        public ActionResult<UserProfile> GetProfile([FromRoute] string username)
+        public ActionResult<UserProfile> GetPublicProfile([FromRoute] string username)
         {
             var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
             if (user == null)
                 return BadRequest("Unable to find the user");
 
-            var catalogs = _repository.Get<Catalog>()
-                .Include(c => c.Items)
-                .Where(c => c.UserId == user.Id.Value);
+            var userProfile = GetUserProfile(user);
+            return Ok(userProfile);
+        }
+                
+        [HttpGet]
+        [Route("{username}/private")]        
+        public ActionResult<UserProfile> GetPrivateProfile([FromRoute] string username)
+        {
+            var loggedInUserId = HttpContext.GetLoggedInUserId();
+            if (loggedInUserId == null)
+                return Unauthorized();
 
-            var catalogsOverview = catalogs.Select(c =>
-                new CatalogOverview
-                {
-                    Id = c.Id,
-                    Name = c.Name,                    
-                    ItemCount = c.Items.Count,
-                    LastThreeImages = c.Items.Where(item => !string.IsNullOrEmpty(item.ImageName))
-                                                .OrderByDescending(i => i.Title).Select(item=>item.ImageName).Take(3).ToList()
-                }).ToList();
+            var user = _repository.Get<User>().Where(u => u.Username == username).SingleOrDefault();
+            if (user == null)
+                return BadRequest("Unable to find the user");
 
-            var result = new UserProfile
-            {
-                user = user,
-                Catalogs = catalogsOverview
-            };
+            var userProfile = GetUserProfile(user);
+            userProfile.IsFollowing = _repository.Get<UserFollow>()
+                                    .Any(f => f.UserId == user.Id.Value && f.FollowerId == loggedInUserId);
 
-            result.TotalFollowers = _repository.Get<UserFollow>().Where(f => f.UserId == user.Id).Count();
-            result.TotalFollowing = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Count();
-            return Ok(result);
+            return Ok(userProfile);
         }
 
         [HttpDelete]
@@ -240,8 +217,35 @@ namespace Favolog.Service.Controllers
             return new NoContentResult();
         }
 
+        private UserProfile GetUserProfile(User user)
+        {
+            var catalogs = _repository.Get<Catalog>()
+                            .Include(c => c.Items)
+                            .Where(c => c.UserId == user.Id.Value);
+
+            var catalogsOverview = catalogs.Select(c =>
+                new CatalogOverview
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    ItemCount = c.Items.Count,
+                    LastItemImage = c.Items.Where(item => !string.IsNullOrEmpty(item.ImageName)).OrderBy(item => item.Id)
+                            .Select(item => item.ImageName).FirstOrDefault()
+                }).ToList();
+
+            var result = new UserProfile
+            {
+                user = user,
+                Catalogs = catalogsOverview
+            };
+
+            result.TotalFollowers = _repository.Get<UserFollow>().Where(f => f.UserId == user.Id).Count();
+            result.TotalFollowing = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Count();
+            return result;
+        }
+
         [HttpGet]
-        [Route("catalog")]        
+        [Route("catalog")]
         public ActionResult<Catalog> GetCatalogs()
         {
             var loggedInUserId = HttpContext.GetLoggedInUserId();
@@ -252,11 +256,10 @@ namespace Favolog.Service.Controllers
             if (user == null)
                 return Unauthorized();
 
-            var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id.Value).OrderBy(c => c.Name).ToList();                            
-            
+            var catalogs = _repository.Get<Catalog>().Where(c => c.UserId == user.Id.Value).OrderBy(c => c.Name).ToList();
+
             return Ok(catalogs);
         }
 
-        
     }
 }

@@ -11,5 +11,7 @@ namespace Favolog.Service.Models
         public int TotalFollowing { get; set; }
 
         public int TotalFollowers { get; set; }
+
+        public bool IsFollowing { get; set; }
     }
 }
