@@ -229,7 +229,7 @@ namespace Favolog.Service.Controllers
                     Id = c.Id,
                     Name = c.Name,
                     ItemCount = c.Items.Count,
-                    LastItemImage = c.Items.Where(item => !string.IsNullOrEmpty(item.ImageName)).OrderBy(item => item.Id)
+                    LastItemImage = c.Items.Where(item => !string.IsNullOrEmpty(item.ImageName)).OrderByDescending(item => item.Id)
                             .Select(item => item.ImageName).FirstOrDefault()
                 }).ToList();
 
