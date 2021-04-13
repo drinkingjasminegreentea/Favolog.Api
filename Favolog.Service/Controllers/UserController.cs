@@ -158,7 +158,7 @@ namespace Favolog.Service.Controllers
         }
 
         [HttpGet]
-        [Route("{username}/profile")]
+        [Route("{username}/public")]
         [AllowAnonymous]
         public ActionResult<UserProfile> GetPublicProfile([FromRoute] string username)
         {
