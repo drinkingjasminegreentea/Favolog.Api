@@ -57,6 +57,8 @@ namespace Favolog.Service.Controllers
                 return BadRequest();
 
             catalog.IsEditable = loggedInUserId == catalog.User.Id;
+            catalog.User.IsFollowing = _repository.Get<UserFollow>()
+                                   .Any(f => f.UserId == catalog.User.Id.Value && f.FollowerId == loggedInUserId);
 
             return Ok(catalog);
         }      

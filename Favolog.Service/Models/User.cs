@@ -28,6 +28,15 @@ namespace Favolog.Service.Models
         public List<User> Following { get; set; }
 
         [NotMapped]
+        public int TotalFollowing { get; set; }
+
+        [NotMapped]
+        public int TotalFollowers { get; set; }
+
+        [NotMapped]
+        public bool IsFollowing { get; set; }
+
+        [NotMapped]
         public string DisplayName { get; set; }
 
     }

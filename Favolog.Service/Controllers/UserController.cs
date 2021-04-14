@@ -183,7 +183,7 @@ namespace Favolog.Service.Controllers
                 return BadRequest("Unable to find the user");
 
             var userProfile = GetUserProfile(user);
-            userProfile.IsFollowing = _repository.Get<UserFollow>()
+            userProfile.User.IsFollowing = _repository.Get<UserFollow>()
                                     .Any(f => f.UserId == user.Id.Value && f.FollowerId == loggedInUserId);
 
             return Ok(userProfile);
@@ -235,12 +235,12 @@ namespace Favolog.Service.Controllers
 
             var result = new UserProfile
             {
-                user = user,
+                User = user,
                 Catalogs = catalogsOverview
             };
 
-            result.TotalFollowers = _repository.Get<UserFollow>().Where(f => f.UserId == user.Id).Count();
-            result.TotalFollowing = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Count();
+            result.User.TotalFollowers = _repository.Get<UserFollow>().Where(f => f.UserId == user.Id).Count();
+            result.User.TotalFollowing = _repository.Get<UserFollow>().Where(f => f.FollowerId == user.Id).Count();
             return result;
         }
 
