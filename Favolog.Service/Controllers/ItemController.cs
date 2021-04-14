@@ -15,15 +15,12 @@ namespace Favolog.Service.Controllers
     public class ItemController : ControllerBase
     {
         private readonly IFavologRepository _repository;
-        private readonly IBlobStorageService _blobService;
-        private readonly IOpenGraphGenerator _openGraphGenerator;
+        private readonly IBlobStorageService _blobService;        
 
-        public ItemController(IFavologRepository repository, IBlobStorageService blobService, 
-            IOpenGraphGenerator openGraphGenerator)
+        public ItemController(IFavologRepository repository, IBlobStorageService blobService)
         {
             _repository = repository;
-            _blobService = blobService;
-            _openGraphGenerator = openGraphGenerator;
+            _blobService = blobService;            
         }
 
         [HttpGet]
@@ -36,31 +33,56 @@ namespace Favolog.Service.Controllers
         }             
 
         [HttpPost]        
-        public async Task<ActionResult> Post([FromBody] Item item)
+        public async Task<ActionResult> Post([FromBody] ItemPost itemPost)
         {
             var loggedInUserId = HttpContext.GetLoggedInUserId();
             if (loggedInUserId == null)
                 return Unauthorized();
 
             var userId = loggedInUserId.Value;
+            Catalog catalog=null;
 
-            var catalog = _repository.Get<Catalog>().Where(c => c.Id == item.CatalogId && c.UserId == userId).SingleOrDefault();
-            if (catalog == null)
-                return BadRequest("Catalog not found");
+            if (!itemPost.CatalogId.HasValue && string.IsNullOrEmpty(itemPost.CatalogName))
+                return BadRequest("Create a new catalog or choose an existing one");
 
-            if (!string.IsNullOrEmpty(item.OriginalUrl))
+            //if it's an existing catalog, check if user has access to it
+            if (itemPost.CatalogId.HasValue)
             {
-                //when links are copied from Amazon, it addes item title before the URL, so need to strip that off
-                var startIndex = item.OriginalUrl.IndexOf("https://");
-                var correctedUrl = item.OriginalUrl.Substring(startIndex, item.OriginalUrl.Length - startIndex);
-                var openGraphInfo = await _openGraphGenerator.GetOpenGraph(correctedUrl);
-                item.SourceImageUrl = openGraphInfo.Image;
-                item.Url = openGraphInfo.Url;                
-                item.Title = openGraphInfo.Title;
-                item.ImageName = GetNewImageName(openGraphInfo.Image);                
-                _blobService.UploadItemImageFromUrl(openGraphInfo.Image, item.ImageName);
+                catalog = _repository.Get<Catalog>().Where(c => c.Id == itemPost.CatalogId && c.UserId == userId).SingleOrDefault();
+                if (catalog == null)
+                    return BadRequest("Catalog not found");
             }
 
+            // if new catalog, then create it
+            if (!string.IsNullOrEmpty(itemPost.CatalogName))
+            {
+                catalog = new Catalog
+                {
+                    Name = itemPost.CatalogName,
+                    UserId = userId
+                };
+                _repository.Attach(catalog);
+                _repository.SaveChanges();
+            }
+
+            //create the new item now
+            var item = new Item
+            {
+                SourceImageUrl = itemPost.SourceImageUrl,
+                OriginalUrl = itemPost.OriginalUrl,
+                Url = itemPost.Url,
+                Title = itemPost.Title,
+                ImageName = itemPost.ImageName,
+                CatalogId = catalog.Id.Value
+            };
+
+            // if item has source image url, then copy it
+            if (!string.IsNullOrEmpty(itemPost.SourceImageUrl))
+            {
+                 item.ImageName = GetNewImageName(itemPost.SourceImageUrl);
+                _blobService.UploadItemImageFromUrl(itemPost.SourceImageUrl, item.ImageName);
+            }
+            
             _repository.Attach(item);
             _repository.SaveChanges();
 

@@ -87,8 +87,7 @@ namespace Favolog.Service
                                         AppSettings.Section));
 
             services.AddScoped<IFavologRepository, FavologRepository>();
-            services.AddScoped<IBlobStorageService, BlobStorageService>();
-            services.AddHttpClient<IOpenGraphGenerator, OpenGraphGenerator>();
+            services.AddScoped<IBlobStorageService, BlobStorageService>();            
             services.AddTransient<IAuthorizationHandler, UserAccessRequirementHandler>();
         }
 

@@ -59,32 +59,7 @@ namespace Favolog.Service.Controllers
             catalog.IsEditable = loggedInUserId == catalog.User.Id;
 
             return Ok(catalog);
-        }
-
-
-        [HttpPost]        
-        public ActionResult<Catalog> Post([FromBody] Catalog catalog)
-        {
-            var loggedInUserId = HttpContext.GetLoggedInUserId();
-            if (loggedInUserId == null)
-                return Unauthorized();
-
-            var userId = loggedInUserId.Value;
-                                               
-            var existingOne = _repository.Get<Catalog>()
-                .Where(c => c.Name == catalog.Name && c.UserId == userId)
-                .SingleOrDefault();
-
-            if (existingOne != null)
-                return Ok(existingOne);
-
-            catalog.UserId = userId;
-
-            _repository.Attach(catalog);
-            _repository.SaveChanges();
-
-            return Ok(catalog);
-        }               
+        }      
 
         [HttpPut]
         public ActionResult Put([FromBody] Catalog catalog)
