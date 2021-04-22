@@ -2,6 +2,7 @@
 using Favolog.Service.Models;
 using Favolog.Service.Repository;
 using Favolog.Service.ServiceClients;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -29,8 +30,20 @@ namespace Favolog.Service.Controllers
         {
             return _repository.Get<Item>(id)
                 .Include(i => i.Catalog)
+                .ThenInclude(c => c.User)
                 .SingleOrDefault();
-        }             
+        }
+
+        [HttpGet]
+        [Route("{id}/public")]
+        [AllowAnonymous]
+        public Item GetPublic([FromRoute] int id)
+        {
+            return _repository.Get<Item>(id)
+                .Include(i => i.Catalog)
+                .ThenInclude(c => c.User)
+                .SingleOrDefault();
+        }
 
         [HttpPost]        
         public async Task<ActionResult> Post([FromBody] ItemPost itemPost)
